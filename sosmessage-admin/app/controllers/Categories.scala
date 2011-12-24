@@ -14,10 +14,12 @@ object Categories extends Controller {
 
   val DataBaseName = "sosmessage"
   val CategoriesCollectionName = "categories"
+  val MessagesCollectionName = "messages"
 
   val mongo = MongoConnection()
 
   val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
+  val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
 
   val categoryForm = Form(
       "name" -> text(minLength = 1)
@@ -29,7 +31,13 @@ object Categories extends Controller {
       a :: l
     ).reverse
 
-    Ok(views.html.categories.index(categories, categoryForm))
+    val messagesCountByCategory = categories.foldLeft(Map[String, Long]())((m, o) => {
+      val count = messagesCollection.count(MongoDBObject("categoryId" -> o.get("_id")))
+      m + (o.get("_id").toString -> count)
+    }
+    )
+
+    Ok(views.html.categories.index(categories, messagesCountByCategory, categoryForm))
   }
 
   def save = Action { implicit request =>

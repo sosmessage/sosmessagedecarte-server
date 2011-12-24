@@ -1,5 +1,6 @@
 @(
   categories: List[com.mongodb.DBObject],
+  messagesCountByCategory: Map[String, Long],
   newCategoryForm:play.api.data.Form[String]
 )(implicit flash: play.api.mvc.Flash)
 
@@ -36,6 +37,7 @@
             <tr>
               <td>
                 <a href="@routes.Messages.index(Some(category.get("_id").toString))">@category.get("name")</a>
+                &nbsp;(@messagesCountByCategory(category.get("_id").toString))
               </td>
               <td>
                 @{
