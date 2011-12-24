@@ -77,4 +77,20 @@ object Categories extends Controller {
     )
   }
 
+  def publish(id: String) = Action { implicit request =>
+    val oid = new ObjectId(id)
+    var o = categoriesCollection.findOne(MongoDBObject("_id" -> oid)).get
+    o += ("published" -> (true: java.lang.Boolean))
+    categoriesCollection.save(o)
+    Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
+  }
+
+  def unpublish(id: String) = Action { implicit request =>
+    val oid = new ObjectId(id)
+    var o = categoriesCollection.findOne(MongoDBObject("_id" -> oid)).get
+    o += ("published" -> (false: java.lang.Boolean))
+    categoriesCollection.save(o)
+    Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
+  }
+
 }

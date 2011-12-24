@@ -11,6 +11,8 @@ POST      /admin/categories                               controllers.Categories
 POST      /admin/categories/:id/delete                    controllers.Categories.delete(id: String)
 GET       /admin/categories/:categoryId                   controllers.Categories.edit(categoryId: String)
 POST      /admin/categories/:categoryId                   controllers.Categories.update(categoryId: String)
+POST      /admin/categories/publish/:categoryId           controllers.Categories.publish(categoryId: String)
+POST      /admin/categories/unpublish/:categoryId         controllers.Categories.unpublish(categoryId: String)
 
 # Messages
 GET       /admin/messages                                             controllers.Messages.index(categoryId: Option[String] = None)

@@ -31,7 +31,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   def intent = {
     case req @ GET(Path("/api/v1/categories")) =>
       val categoryOrder = MongoDBObject("name" -> 1)
-      val categories = categoriesCollection.find().sort(categoryOrder).foldLeft(List[JValue]())((l, a) =>
+      val q = MongoDBObject("published" -> true)
+      val categories = categoriesCollection.find(q).sort(categoryOrder).foldLeft(List[JValue]())((l, a) =>
         categoryToJSON(a) :: l
       ).reverse
       val json = ("count", categories.size) ~ ("items", categories)
