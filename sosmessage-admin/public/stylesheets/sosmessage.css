@@ -47,3 +47,8 @@ section {
 .messages-count {
   margin-left: 40px;
 }
+
+.btn.publish-button {
+  width: 70px;
+  margin-right: 25px;
+}
