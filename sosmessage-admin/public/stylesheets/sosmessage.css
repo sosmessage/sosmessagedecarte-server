@@ -52,3 +52,8 @@ section {
   width: 70px;
   margin-right: 25px;
 }
+
+.up-down-arrow {
+  width: 12px;
+  height: 10px;
+}

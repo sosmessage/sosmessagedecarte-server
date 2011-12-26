@@ -26,7 +26,7 @@ object Categories extends Controller {
   )
 
   def index = Action { implicit request =>
-    val categoryOrder = MongoDBObject("name" -> 1)
+    val categoryOrder = MongoDBObject("order" -> -1)
     val categories = categoriesCollection.find().sort(categoryOrder).foldLeft(List[DBObject]())((l, a) =>
       a :: l
     ).reverse
@@ -50,6 +50,7 @@ object Categories extends Controller {
         builder += "name" -> v
         builder += "createdAt" -> new Date()
         builder += "modifiedAt" -> new Date()
+        builder += "order" -> categoriesCollection.count
         categoriesCollection += builder.result
 
         Redirect(routes.Categories.index).flashing("actionDone" -> "categoryAdded")
@@ -98,6 +99,51 @@ object Categories extends Controller {
     var o = categoriesCollection.findOne(MongoDBObject("_id" -> oid)).get
     o += ("published" -> (false: java.lang.Boolean))
     categoriesCollection.save(o)
+    Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
+  }
+
+  def moveUp(id: String) = Action { implicit request =>
+    val categoryOrder = MongoDBObject("order" -> -1)
+    val categories = categoriesCollection.find().sort(categoryOrder).foldLeft(List[DBObject]())((l, a) =>
+      a :: l
+    ).reverse
+
+    categories.find(o => id == o.get("_id").toString).map { selectedCategory =>
+      val index = categories.indexOf(selectedCategory)
+      if (index > 0) {
+        var q = MongoDBObject("_id" -> selectedCategory.get("_id"))
+        var o = $inc ("order" -> 1)
+        categoriesCollection.update(q, o, false, false)
+
+        var categoryBefore = categories(index - 1)
+        q = MongoDBObject("_id" -> categoryBefore.get("_id"))
+        o = $inc ("order" -> -1)
+        categoriesCollection.update(q, o, false, false)
+      }
+    }
+
+    Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
+  }
+
+  def moveDown(id: String) = Action { implicit request =>
+    val categoryOrder = MongoDBObject("order" -> -1)
+    val categories = categoriesCollection.find().sort(categoryOrder).foldLeft(List[DBObject]())((l, a) =>
+      a :: l
+    ).reverse
+
+    categories.find(o => id == o.get("_id").toString).map { selectedCategory =>
+      val index = categories.indexOf(selectedCategory)
+      if (index < categories.size - 1) {
+        var q = MongoDBObject("_id" -> selectedCategory.get("_id"))
+        var o = $inc ("order" -> -1)
+        categoriesCollection.update(q, o, false, false)
+
+        var categoryAfter = categories(index + 1)
+        q = MongoDBObject("_id" -> categoryAfter.get("_id"))
+        o = $inc ("order" -> 1)
+        categoriesCollection.update(q, o, false, false)
+      }
+    }
     Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
   }
 

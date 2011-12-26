@@ -25,6 +25,7 @@
       <table class="zebra-striped">
         <thead>
           <tr>
+            <th></th>
             <th>Name</th>
             <th>Created at</th>
             <th>Modified at</th>
@@ -35,6 +36,20 @@
         <tbody>
           @categories.map { category =>
             <tr>
+              <td>
+                @if(categories.indexOf(category) > 0) {
+                  <form action="@routes.Categories.moveUp(category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <input class="up-down-arrow" type="image" src="@routes.Assets.at("images/up.gif")" type="submit" width="12" height="10">
+                  </form>
+                }
+                @if(categories.indexOf(category) < categories.size - 1) {
+                  <form action="@routes.Categories.moveDown(category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <input class="up-down-arrow" type="image" src="@routes.Assets.at("images/down.gif")" width="12" height="10" type="submit">
+                  </form>
+                }
+              </td>
               <td>
                 <a href="@routes.Messages.index(Some(category.get("_id").toString))">@category.get("name")</a>
                 &nbsp;(@messagesCountByCategory(category.get("_id").toString))
