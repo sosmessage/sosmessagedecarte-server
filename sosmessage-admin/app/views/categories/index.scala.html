@@ -40,13 +40,15 @@
                 @if(categories.indexOf(category) > 0) {
                   <form action="@routes.Categories.moveUp(category.get("_id").toString)" method="POST"
                     style="margin-bottom:0">
-                    <input class="up-down-arrow" type="image" src="@routes.Assets.at("images/up.gif")" type="submit" width="12" height="10">
+                    <input class="up-down-arrow" type="image" title="Move category up"
+                      alt="Move category up" src="@routes.Assets.at("images/up.gif")" type="submit">
                   </form>
                 }
                 @if(categories.indexOf(category) < categories.size - 1) {
                   <form action="@routes.Categories.moveDown(category.get("_id").toString)" method="POST"
                     style="margin-bottom:0">
-                    <input class="up-down-arrow" type="image" src="@routes.Assets.at("images/down.gif")" width="12" height="10" type="submit">
+                    <input class="up-down-arrow" type="image" title="Move category down"
+                      alt="Move category down" src="@routes.Assets.at("images/down.gif")" type="submit">
                   </form>
                 }
               </td>
