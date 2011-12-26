@@ -6,6 +6,10 @@ section {
   padding: 60px 0 0 0;
 }
 
+.align-right {
+  text-align: right;
+}
+
 .alert-banner {
   margin-top: 20px;
 }

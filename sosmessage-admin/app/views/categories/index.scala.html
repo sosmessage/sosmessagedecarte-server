@@ -27,8 +27,6 @@
           <tr>
             <th></th>
             <th>Name</th>
-            <th>Created at</th>
-            <th>Modified at</th>
             <th>State</th>
             <th class="delete-message-col"></th>
           </tr>
@@ -55,18 +53,6 @@
               <td>
                 <a href="@routes.Messages.index(Some(category.get("_id").toString))">@category.get("name")</a>
                 &nbsp;(@messagesCountByCategory(category.get("_id").toString))
-              </td>
-              <td>
-                @{
-                  val df = java.text.DateFormat.getDateTimeInstance
-                  df.format(category.get("createdAt"))
-                }
-              </td>
-              <td>
-                @{
-                  val df = java.text.DateFormat.getDateTimeInstance
-                  df.format(category.get("modifiedAt"))
-                }
               </td>
               <td>
                 @if(category.get("published").asInstanceOf[Boolean]) {

@@ -47,9 +47,7 @@
         <thead>
           <tr>
             <th>Text</th>
-            <th>Created at</th>
-            <th>Modified at</th>
-            <th>Rating</th>
+            <th class="align-right">Rating</th>
             <th class="delete-message-col"></th>
           </tr>
         </thead>
@@ -61,19 +59,7 @@
 @message.get("text")
                 </pre>
               </td>
-              <td>
-                @{
-                  val df = java.text.DateFormat.getDateTimeInstance
-                  df.format(message.get("createdAt"))
-                }
-              </td>
-              <td>
-                @{
-                  val df = java.text.DateFormat.getDateTimeInstance
-                  df.format(message.get("modifiedAt"))
-                }
-              </td>
-              <td>
+              <td class="align-right">
                 <div data-rating-start="@message.get("rating")"
                   data-rating-count="@message.get("ratingCount")"></div> (@message.get("ratingCount") ratings)
               </td>
