@@ -22,7 +22,10 @@ object Categories extends Controller {
   val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
 
   val categoryForm = Form(
-      "name" -> text(minLength = 1)
+    of(
+      "name" -> text(minLength = 1),
+      "color" -> text(minLength = 3)
+    )
   )
 
   def index = Action { implicit request =>
@@ -47,7 +50,9 @@ object Categories extends Controller {
       },
       v => {
         val builder = MongoDBObject.newBuilder
-        builder += "name" -> v
+        builder += "name" -> v._1
+        val color = if (v._2.startsWith("#")) v._2 else "#" + v._2
+        builder += "color" -> color
         builder += "createdAt" -> new Date()
         builder += "modifiedAt" -> new Date()
         builder += "order" -> categoriesCollection.count
@@ -68,7 +73,8 @@ object Categories extends Controller {
   def edit(id: String) = Action { implicit request =>
     val q = MongoDBObject("_id" -> new ObjectId(id))
     categoriesCollection.findOne(q).map { category =>
-      Ok(views.html.categories.edit(id, categoryForm.fill(category.get("name").toString)))
+      Ok(views.html.categories.edit(id, categoryForm.fill(category.get("name").toString,
+        category.get("color").toString)))
     }.getOrElse(NotFound)
   }
 
@@ -79,7 +85,8 @@ object Categories extends Controller {
       },
       v => {
         val q = MongoDBObject("_id" -> new ObjectId(id))
-        val o = $set ("name" -> v, "modifiedAt" -> new Date())
+        val color = if (v._2.startsWith("#")) v._2 else "#" + v._2
+        val o = $set ("name" -> v._1, "color" -> color, "modifiedAt" -> new Date())
         categoriesCollection.update(q, o, false, false)
         Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
       }

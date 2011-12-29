@@ -140,7 +140,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   private def categoryToJSON(o: DBObject) = {
     ("id", o.get("_id").toString) ~
     ("type", "category") ~
-    ("name", o.get("name").toString)
+    ("name", o.get("name").toString) ~
+    ("color", o.get("color").toString)
   }
 
 }

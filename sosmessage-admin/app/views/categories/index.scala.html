@@ -1,7 +1,7 @@
 @(
   categories: List[com.mongodb.DBObject],
   messagesCountByCategory: Map[String, Long],
-  newCategoryForm:play.api.data.Form[String]
+  newCategoryForm:play.api.data.Form[(String, String)]
 )(implicit flash: play.api.mvc.Flash)
 
 @main(selectedTab = "categories", actionDone = flash.get("actionDone")) {
@@ -27,6 +27,7 @@
           <tr>
             <th></th>
             <th>Name</th>
+            <th>Color</th>
             <th>State</th>
             <th class="delete-message-col"></th>
           </tr>
@@ -53,6 +54,9 @@
               <td>
                 <a href="@routes.Messages.index(Some(category.get("_id").toString))">@category.get("name")</a>
                 &nbsp;(@messagesCountByCategory(category.get("_id").toString))
+              </td>
+              <td>
+                <div class="color-div" style="background-color: @category.get("color").toString"></div>
               </td>
               <td>
                 @if(category.get("published").asInstanceOf[Boolean]) {
@@ -98,6 +102,12 @@
                 <label for="@field.name">Name</label>
                 <div class="input">
                   <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newCategoryForm.forField("color") { field =>
+                <label for="@field.name">Color</label>
+                <div class="input">
+                  <input class="xlarge color" id="@field.name" name="@field.name" type="text" value="@field.value" />
                 </div>
               }
             </div>

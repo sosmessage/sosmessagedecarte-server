@@ -61,3 +61,11 @@ section {
   width: 12px;
   height: 10px;
 }
+
+.color-div {
+  width: 36px;
+  height: 28px;
+  border: 1px;
+  border-style: solid;
+  border-color: black;
+}

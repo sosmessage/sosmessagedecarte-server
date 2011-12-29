@@ -85,4 +85,22 @@ $(document).ready(function() {
     $("form textarea:first").focus();
   }
 
+  $('.color').keyup(function() {
+    updateBackgroundColor($(this));
+  });
+
+  $('.color').each(function() {
+    updateBackgroundColor($(this));
+  });
+
 });
+
+function updateBackgroundColor(ele) {
+  var color = $(ele).val();
+  if (color.length > 0) {
+    if (color[0] !== "#") {
+      color = "#" + color;
+    }
+    $(ele).css("background-color", color);
+  }
+}

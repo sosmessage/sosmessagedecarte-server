@@ -1,6 +1,6 @@
 @(
   categoryId: String,
-  categoryForm:play.api.data.Form[String]
+  categoryForm:play.api.data.Form[(String, String)]
 )(implicit flash: play.api.mvc.Flash)
 
 @import helper._
@@ -22,6 +22,12 @@
               <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
             </div>
           }
+          @categoryForm.forField("color") { field =>
+            <label for="@field.name">Color</label>
+            <div class="input">
+              <input class="xlarge color" id="@field.name" name="@field.name" type="text" value="@field.value" />
+            </div>
+            }
         </div>
       </fieldset>
       <div class="actions">
