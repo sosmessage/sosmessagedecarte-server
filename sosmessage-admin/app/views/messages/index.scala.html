@@ -56,7 +56,7 @@
             <tr>
               <td>
                 <p>
-                  @Html(message.get("text").toString.replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
+                  @Html(org.apache.commons.lang.StringEscapeUtils.escapeHtml(message.get("text").toString).replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
                 </p>
               </td>
               <td class="align-right rating-col">
