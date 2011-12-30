@@ -47,7 +47,7 @@
         <thead>
           <tr>
             <th>Text</th>
-            <th class="align-right">Rating</th>
+            <th class="align-right rating-col">Rating</th>
             <th class="delete-message-col"></th>
           </tr>
         </thead>
@@ -55,11 +55,11 @@
           @messages.map { message =>
             <tr>
               <td>
-                <pre>
-@message.get("text")
-                </pre>
+                <p>
+                  @Html(message.get("text").toString.replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
+                </p>
               </td>
-              <td class="align-right">
+              <td class="align-right rating-col">
                 <div data-rating-start="@message.get("rating")"
                   data-rating-count="@message.get("ratingCount")"></div> (@message.get("ratingCount") ratings)
               </td>
