@@ -20,7 +20,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
 
-  val dataBaseName = config[String]("database.name")
+  val dataBaseName = config[String]("database.name", "sosmessage")
 
   val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
