@@ -105,21 +105,6 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val key = "ratings." + uid.replaceAll ("\\.", "-")
       messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set (key -> rating), false, false)
       req.respond(NoContent)
-
-//    case GET(Path(Seg("api" :: "v1" :: "category" :: id :: "randomMessage" :: Nil))) =>
-//      val random = scala.math.random
-//      println(random)
-//      val q: DBObject = ("random" $gte random) ++ ("categoryId" -> new ObjectId(id))
-//      messagesCollection.findOne(q) match {
-//        case None =>
-//          val q: DBObject = ("random" $lte random) ++ ("categoryId" -> new ObjectId(id))
-//          val message = messagesCollection.findOne(q).get
-//          val json = messageToJSON(message)
-//          JsonContent ~> ResponseString(pretty(render(json)))
-//        case Some(message) =>
-//          val json = messageToJSON(message)
-//          JsonContent ~> ResponseString(pretty(render(json)))
-//      }
   }
 
   private def messageToJSON(message: DBObject, rating: Option[JValue] = None) = {
