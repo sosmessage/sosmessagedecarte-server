@@ -24,7 +24,7 @@ object Categories extends Controller {
   val categoryForm = Form(
     of(
       "name" -> text(minLength = 1),
-      "color" -> text(minLength = 3)
+      "color" -> text(minLength = 9, maxLength = 9)
     )
   )
 
@@ -81,7 +81,7 @@ object Categories extends Controller {
   def update(id: String) = Action { implicit request =>
     categoryForm.bindFromRequest.fold(
       f => {
-        Redirect(routes.Categories.index)
+        Redirect(routes.Categories.edit(id))
       },
       v => {
         val q = MongoDBObject("_id" -> new ObjectId(id))

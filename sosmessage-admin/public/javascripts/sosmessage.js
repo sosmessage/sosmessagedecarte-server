@@ -99,9 +99,18 @@ $(document).ready(function() {
 
 function updateBackgroundColor(ele) {
   var color = $(ele).val();
+  if (color[0] !== "#") {
+    color = "#" + color;
+    $(ele).val(color);
+  }
+
   if (color.length > 0) {
     if (color[0] !== "#") {
       color = "#" + color;
+    }
+    if (color.length > 7) {
+      // remove alpha
+      color = "#" + color.substring(3)
     }
     $(ele).css("background-color", color);
   }

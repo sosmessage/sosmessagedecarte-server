@@ -69,3 +69,8 @@ section {
   border-style: solid;
   border-color: black;
 }
+
+.color-tip {
+  color: #bbbbbb;
+  margin-left: 10px;
+}

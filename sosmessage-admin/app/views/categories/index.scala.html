@@ -56,7 +56,7 @@
                 &nbsp;(@messagesCountByCategory(category.get("_id").toString))
               </td>
               <td>
-                <div class="color-div" style="background-color: @category.get("color").toString"></div>
+                <div class="color-div" style="background-color: #@category.get("color").toString.substring(3)"></div>
               </td>
               <td>
                 @if(category.get("published").asInstanceOf[Boolean]) {
