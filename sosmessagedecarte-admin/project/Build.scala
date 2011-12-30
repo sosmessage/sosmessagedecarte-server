@@ -5,7 +5,7 @@ import PlayProject._
 object ApplicationBuild extends Build {
 
     val appName         = "sosmessagedecarte-admin"
-    val appVersion      = "1.0"
+    val appVersion      = "1.1-SNAPSHOT"
 
     val appDependencies = Seq(
       "com.mongodb.casbah" %% "casbah" % "3.0.0-SNAPSHOT",

@@ -2,7 +2,7 @@ organization := "fr.arnk"
 
 name := "sosmessagedecarte-api"
 
-version := "1.0"
+version := "1.1-SNAPSHOT"
 
 seq(com.github.retronym.SbtOneJar.oneJarSettings: _*)
 
