@@ -57,6 +57,7 @@ $(document).ready(function() {
     var ratingCount = $(this).attr("data-rating-count");
     if (ratingCount > 0) {
       $(this).raty({
+        number: 4,
         path: "/admin/assets/images/",
         half: true,
         readOnly:  true,
@@ -64,6 +65,7 @@ $(document).ready(function() {
       });
     } else {
       $(this).raty({
+        number: 4,
         path: "/admin/assets/images/",
         readOnly:  true
       });

@@ -98,10 +98,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       }
       req.respond(NoContent)
 
-    case req @ POST(Path(Seg("api" :: "v1" :: "message" :: messageId :: "rate" :: Nil))) =>
+    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
       val Params(form) = req
       val uid = form("uid")(0)
-      val rating = if(form("rating")(0).toInt > 5) 5 else form("rating")(0).toInt
+      val rating = if(form("rating")(0).toInt > 4) 4 else form("rating")(0).toInt
       val key = "ratings." + uid.replaceAll ("\\.", "-")
       messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set (key -> rating), false, false)
       req.respond(NoContent)
