@@ -8,7 +8,9 @@ import com.mongodb.casbah.MongoConnection
 import org.bson.types.ObjectId
 import java.util.Date
 import com.mongodb.DBObject
-import com.mongodb.casbah.Imports._
+import com.mongodb.casbah._
+
+case class Category(name: String,  color: String)
 
 object Categories extends Controller {
 
@@ -22,9 +24,9 @@ object Categories extends Controller {
   val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
 
   val categoryForm = Form(
-    of(
-      "name" -> text(minLength = 1),
-      "color" -> text(minLength = 9, maxLength = 9)
+    of(Category.apply _)(
+      "name" -> requiredText,
+      "color" -> text (minLength = 9)
     )
   )
 
@@ -45,13 +47,13 @@ object Categories extends Controller {
 
   def save = Action { implicit request =>
     categoryForm.bindFromRequest().fold(
-      f => {
+      formWithErrors => {
         Redirect(routes.Categories.index)
       },
-      v => {
+      category => {
         val builder = MongoDBObject.newBuilder
-        builder += "name" -> v._1
-        val color = if (v._2.startsWith("#")) v._2 else "#" + v._2
+        builder += "name" -> category.name
+        val color = if (category.color.startsWith("#")) category.color else "#" + category.color
         builder += "color" -> color
         builder += "createdAt" -> new Date()
         builder += "modifiedAt" -> new Date()
@@ -73,20 +75,20 @@ object Categories extends Controller {
   def edit(id: String) = Action { implicit request =>
     val q = MongoDBObject("_id" -> new ObjectId(id))
     categoriesCollection.findOne(q).map { category =>
-      Ok(views.html.categories.edit(id, categoryForm.fill(category.get("name").toString,
-        category.get("color").toString)))
+      val c = Category(category.get("name").toString, category.get("color").toString)
+      Ok(views.html.categories.edit(id, categoryForm.fill(c)))
     }.getOrElse(NotFound)
   }
 
   def update(id: String) = Action { implicit request =>
     categoryForm.bindFromRequest.fold(
-      f => {
+      formWithErrors => {
         Redirect(routes.Categories.edit(id))
       },
-      v => {
+      category => {
         val q = MongoDBObject("_id" -> new ObjectId(id))
-        val color = if (v._2.startsWith("#")) v._2 else "#" + v._2
-        val o = $set ("name" -> v._1, "color" -> color, "modifiedAt" -> new Date())
+        val color = if (category.color.startsWith("#")) category.color else "#" + category.color
+        val o = $set ("name" -> category.name, "color" -> color, "modifiedAt" -> new Date())
         categoriesCollection.update(q, o, false, false)
         Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
       }

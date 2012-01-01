@@ -25,21 +25,12 @@ object Messages extends Controller {
   val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
   val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
   
-  val message2Form = Form(
+  val messageForm = Form(
     of(Message.apply _)(
       "categoryId" -> requiredText,
       "text" -> requiredText,
       "contributorName" -> text,
       "contributorEmail" -> text,
-      "approved" -> optional(text)
-    )
-  )
-
-
-  val messageForm = Form(
-    of(
-      "category" -> requiredText,
-      "text" -> requiredText,
       "approved" -> optional(text)
     )
   )
@@ -58,7 +49,7 @@ object Messages extends Controller {
       a :: l
     ).map(addRating(_)).reverse
 
-    Ok(views.html.messages.index(categories, selectedCategoryId, messages, message2Form))
+    Ok(views.html.messages.index(categories, selectedCategoryId, messages, messageForm))
   }
 
   def addRating(message: DBObject) = {
@@ -88,7 +79,7 @@ object Messages extends Controller {
   }
 
   def save(selectedCategoryId: String) = Action { implicit request =>
-    message2Form.bindFromRequest().fold(
+    messageForm.bindFromRequest().fold(
       formWithErrors => {
         Redirect(routes.Messages.index(Some(selectedCategoryId)))
       },
@@ -136,12 +127,12 @@ object Messages extends Controller {
     messagesCollection.findOne(q).map { message =>
       val m = Message(message.get("categoryId").toString, message.get("text").toString,
         message.get("contributorName").toString, message.get("contributorEmail").toString, None)
-      Ok(views.html.messages.edit(categories, categoryId, messageId, message2Form.fill(m)))
+      Ok(views.html.messages.edit(categories, categoryId, messageId, messageForm.fill(m)))
     }.getOrElse(NotFound)
   }
 
   def update(categoryId: String, messageId: String) = Action { implicit request =>
-    message2Form.bindFromRequest.fold(
+    messageForm.bindFromRequest.fold(
       formWithErrors => {
         Redirect(routes.Messages.index(Some(categoryId)))
       },
