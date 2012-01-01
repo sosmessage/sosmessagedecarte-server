@@ -41,7 +41,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1)
+      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1,
+        "modifiedAt" -> 1, "contributorName" -> 1, "contributorEmail" -> 1)
       val messages = messagesCollection.find(q, keys).sort(messageOrder).foldLeft(List[JValue]())((l, a) =>
         messageToJSON(a) :: l
       ).reverse
@@ -53,7 +54,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val count = messagesCollection.find(q, MongoDBObject("_id" -> 1)).count
       val skip = random.nextInt(if (count <= 0) 1 else count)
 
-      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1)
+      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1,
+        "modifiedAt" -> 1, "contributorName" -> 1, "contributorEmail" -> 1)
       val messages = messagesCollection.find(q, keys).limit(-1).skip(skip)
       if (!messages.isEmpty) {
         val message = messages.next()
@@ -86,13 +88,26 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     case req @ POST(Path(Seg("api" :: "v1" :: "categories" :: categoryId :: "message" :: Nil))) =>
       categoriesCollection.findOne(MongoDBObject("_id" -> new ObjectId(categoryId))).map { category =>
         val Params(form) = req
-        val text = form("text")(0)
         val builder = MongoDBObject.newBuilder
         builder += "categoryId" -> category.get("_id")
         builder += "category" -> category.get("name")
-        builder += "text" -> text
+        builder += "text" -> form("text")(0)
+        form.get("contributorName") match {
+          case Some(param) =>
+            builder += "contributorName" -> param(0)
+          case None =>
+            builder += "contributorName" -> ""
+        }
+        form.get("contributorEmail") match {
+          case Some(param: List[String]) =>
+            builder += "contributorEmail" -> param(0)
+          case None =>
+            builder += "contributorEmail" -> ""
+        }
+
         builder += "state" -> "waiting"
         builder += "createdAt" -> new Date()
+        builder += "modifiedAt" -> new Date()
         builder += "random" -> scala.math.random
         messagesCollection += builder.result
       }
@@ -113,7 +128,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     ("category", message.get("category").toString) ~
     ("categoryId", message.get("categoryId").toString) ~
     ("text", message.get("text").toString) ~
-    ("createdAt", message.get("createdAt").toString)
+    ("createdAt", message.get("createdAt").toString) ~
+    ("modifiedAt", message.get("modifiedAt").toString) ~
+    ("contributorName", message.get("contributorName").toString) ~
+    ("contributorEmail", message.get("contributorEmail").toString)
 
     rating match {
       case None => json ~ ("rating" -> 0) ~ ("ratingCount" -> 0)

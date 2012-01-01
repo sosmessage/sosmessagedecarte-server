@@ -59,10 +59,10 @@
       <table class="zebra-striped">
         <thead>
           <tr>
-            <th>Text</th>
             <th>Category</th>
+            <th>Text</th>
+            <th>Contributor</th>
             <th>Created at</th>
-            <th>Modified at</th>
             <th class="delete-message-col"></th>
           </tr>
         </thead>
@@ -70,23 +70,24 @@
           @messages.map { message =>
             <tr>
               <td>
-                <pre>
-@message.get("text")
-                </pre>
+                <p>
+                  @message.get("category")
+                </p>
               </td>
               <td>
-                @message.get("category")
+                <p>
+                  @Html(org.apache.commons.lang.StringEscapeUtils.escapeHtml(message.get("text").toString).replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
+                </p>
+              </td>
+              <td>
+                <p>
+                  @message.get("contributorName")
+                </p>
               </td>
               <td>
                 @{
                   val df = java.text.DateFormat.getDateTimeInstance
                   df.format(message.get("createdAt"))
-                }
-              </td>
-              <td>
-                @{
-                  val df = java.text.DateFormat.getDateTimeInstance
-                  df.format(message.get("modifiedAt"))
                 }
               </td>
               <td class="actions-col">
