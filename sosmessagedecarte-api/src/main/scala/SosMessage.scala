@@ -8,7 +8,6 @@ import unfiltered.netty._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.Printer._
-import net.liftweb.json.JsonParser._
 import com.mongodb.casbah.commons.MongoDBObject
 import org.bson.types.ObjectId
 import com.mongodb.casbah._
@@ -28,6 +27,39 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
   val random = new Random()
 
+  val mapJS = """
+    function() {
+      emit(this._id, this);
+    }
+  """
+
+  val reduceJS = """
+    function(key, values) {
+    }
+  """
+
+  val finalizeJS = """
+    function(key, value) {
+      var count = 0;
+      var total = 0;
+      for (var prop in value.ratings) {
+        count++;
+        total += value.ratings[prop];
+      }
+
+      if (total == 0 || count == 0) {
+        avg = 0;
+      } else {
+        avg = total / count;
+      }
+
+      value.ratingCount = count;
+      value.rating = avg;
+      delete value.ratings;
+      return value;
+    }
+  """
+
   def intent = {
     case req @ GET(Path("/api/v1/categories")) =>
       val categoryOrder = MongoDBObject("order" -> -1)
@@ -39,12 +71,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
 
     case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
-      val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1,
-        "modifiedAt" -> 1, "contributorName" -> 1, "contributorEmail" -> 1)
-      val messages = messagesCollection.find(q, keys).sort(messageOrder).foldLeft(List[JValue]())((l, a) =>
-        messageToJSON(a) :: l
+      val messages = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
+        finalizeFunction = Some(finalizeJS), query = Some(q)).foldLeft(List[JValue]())((l, a) =>
+        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
       ).reverse
       val json = ("count", messages.size) ~ ("items", messages)
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
@@ -54,32 +84,15 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val count = messagesCollection.find(q, MongoDBObject("_id" -> 1)).count
       val skip = random.nextInt(if (count <= 0) 1 else count)
 
-      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "createdAt" -> 1,
-        "modifiedAt" -> 1, "contributorName" -> 1, "contributorEmail" -> 1)
+      val keys = MongoDBObject("_id" -> 1)
       val messages = messagesCollection.find(q, keys).limit(-1).skip(skip)
       if (!messages.isEmpty) {
         val message = messages.next()
 
-        val r = """
-        function(doc, out) {
-          for (var prop in doc.ratings) {
-            out.count++;
-            out.total += doc.ratings[prop];
-          }
-        }
-        """
-        val f = """
-        function(out) {
-          if (out.total == 0 || out.count == 0) {
-            out.avg = 0;
-          } else {
-            out.avg = out.total / out.count;
-          }
-        }
-        """
-        val rating = messagesCollection.group(MongoDBObject("ratings" -> 1),
-          MongoDBObject("_id" -> message.get("_id")), MongoDBObject("count" -> 0, "total" -> 0), r, f)
-        val json = messageToJSON(message, Some(parse(rating.mkString)))
+        val q = MongoDBObject("_id" -> message.get("_id"))
+        val res = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
+          finalizeFunction = Some(finalizeJS), query = Some(q)).next()
+        val json = messageToJSON(res.get("value").asInstanceOf[DBObject])
         req.respond(JsonContent ~> ResponseString(pretty(render(json))))
       } else {
         req.respond(NoContent)
@@ -99,7 +112,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
             builder += "contributorName" -> ""
         }
         form.get("contributorEmail") match {
-          case Some(param: List[String]) =>
+          case Some(param) =>
             builder += "contributorEmail" -> param(0)
           case None =>
             builder += "contributorEmail" -> ""
@@ -122,8 +135,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       req.respond(NoContent)
   }
 
-  private def messageToJSON(message: DBObject, rating: Option[JValue] = None) = {
-    val json = ("id", message.get("_id").toString) ~
+  private def messageToJSON(message: DBObject) = {
+    ("id", message.get("_id").toString) ~
     ("type", "message") ~
     ("category", message.get("category").toString) ~
     ("categoryId", message.get("categoryId").toString) ~
@@ -131,13 +144,9 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     ("createdAt", message.get("createdAt").toString) ~
     ("modifiedAt", message.get("modifiedAt").toString) ~
     ("contributorName", message.get("contributorName").toString) ~
-    ("contributorEmail", message.get("contributorEmail").toString)
-
-    rating match {
-      case None => json ~ ("rating" -> 0) ~ ("ratingCount" -> 0)
-      case Some(r) =>
-        json ~ ("rating" -> rating \ "avg") ~ ("ratingCount" -> rating \ "count")
-    }
+    ("contributorEmail", message.get("contributorEmail").toString) ~
+    ("rating", message.get("rating").asInstanceOf[Double]) ~
+    ("ratingCount", message.get("ratingCount").asInstanceOf[Double])
   }
 
   private def categoryToJSON(o: DBObject) = {

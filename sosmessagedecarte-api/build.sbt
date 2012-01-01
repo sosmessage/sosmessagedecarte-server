@@ -15,3 +15,5 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "0.9.28",
   "net.databinder" %% "unfiltered-spec" % "0.5.0" % "test"
 )
+
+scalacOptions ++= Seq("-unchecked", "-deprecation")

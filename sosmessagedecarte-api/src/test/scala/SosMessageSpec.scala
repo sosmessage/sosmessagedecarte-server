@@ -67,10 +67,10 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       items.size must_== 2
 
       val firstItem = items(0)
-      firstItem \ "text" must_== JString("Third message in first category")
+      firstItem \ "text" must_== JString("First message in first category")
 
       val secondItem = items(1)
-      secondItem \ "text" must_== JString("First message in first category")
+      secondItem \ "text" must_== JString("Third message in first category")
     }
 
     "retrieve only approved messages in secondCategory" in {
