@@ -61,13 +61,15 @@ $(document).ready(function() {
         path: "/admin/assets/images/",
         half: true,
         readOnly:  true,
-        start: $(this).attr("data-rating-start")
+        start: $(this).attr("data-rating-start"),
+        width: "100%"
       });
     } else {
       $(this).raty({
         number: 4,
         path: "/admin/assets/images/",
-        readOnly:  true
+        readOnly:  true,
+        width: "100%"
       });
     }
   });
