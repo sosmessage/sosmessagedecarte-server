@@ -74,7 +74,7 @@
                   @message.get("category")
                 </p>
               </td>
-              <td>
+              <td class="moderation-message-col">
                 <p>
                   @Html(org.apache.commons.lang.StringEscapeUtils.escapeHtml(message.get("text").toString).replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
                 </p>
@@ -86,11 +86,11 @@
               </td>
               <td>
                 @{
-                  val df = java.text.DateFormat.getDateTimeInstance
+                  val df = java.text.DateFormat.getDateInstance
                   df.format(message.get("createdAt"))
                 }
               </td>
-              <td class="actions-col">
+              <td class="actions-col moderation-actions-col">
                 @if(selectedTab == "waiting") {
                   <form action="@routes.Moderation.reject(message.get("_id").toString, selectedTab)" method="POST"
                     style="margin-bottom:0">

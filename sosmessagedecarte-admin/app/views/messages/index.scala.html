@@ -55,7 +55,7 @@
         <tbody>
           @messages.map { message =>
             <tr>
-              <td>
+              <td class="message-col">
                 <p>
                   @Html(org.apache.commons.lang.StringEscapeUtils.escapeHtml(message.get("text").toString).replaceAll("\r\n", "<br />").replaceAll("\n", "<br />"))
                 </p>
@@ -70,7 +70,7 @@
                   data-rating-count="@message.get("ratingCount").asInstanceOf[Double].toLong"></div>
                 (@message.get("ratingCount").asInstanceOf[Double].toLong ratings)
               </td>
-              <td class="actions-col">
+              <td class="actions-col messages-actions-col">
                 <form action="@routes.Messages.delete(selectedCategoryId, message.get("_id").toString)" method="POST"
                   style="margin-bottom:0">
                   <button class="btn small danger delete-message" type="submit">Delete</button>

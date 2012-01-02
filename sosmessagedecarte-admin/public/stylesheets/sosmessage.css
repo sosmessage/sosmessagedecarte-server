@@ -48,6 +48,14 @@ section {
   float: right;
 }
 
+.actions-col.messages-actions-col {
+  width: 140px;
+}
+
+.actions-col.moderation-actions-col {
+  width: 140px;
+}
+
 .messages-count {
   margin-left: 40px;
 }
@@ -73,4 +81,16 @@ section {
 .color-tip {
   color: #bbbbbb;
   margin-left: 10px;
+}
+
+.rating-col {
+  width: 80px;
+}
+
+.message-col {
+  width: 500px;
+}
+
+.moderation-message-col {
+  width: 380px;
 }
