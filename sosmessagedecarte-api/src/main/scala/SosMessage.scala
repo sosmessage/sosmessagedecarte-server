@@ -12,12 +12,14 @@ import com.mongodb.casbah.commons.MongoDBObject
 import org.bson.types.ObjectId
 import com.mongodb.casbah._
 import java.util.Date
+import map_reduce.MapReduceStandardOutput
 import org.streum.configrity.Configuration
 
 class SosMessage(config: Configuration) extends async.Plan with ServerErrorResponse {
 
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
+  val MapReduceMessagesCollectionName = "mapReduceMessages_"
 
   val dataBaseName = config[String]("database.name", "sosmessage")
 
@@ -72,8 +74,12 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
     case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
       val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val messages = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
-        finalizeFunction = Some(finalizeJS), query = Some(q)).foldLeft(List[JValue]())((l, a) =>
+      val resultCollectionName = MapReduceMessagesCollectionName + id
+      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+        finalizeFunction = Some(finalizeJS), query = Some(q))
+
+      val order = MongoDBObject("value.createdAt" -> -1)
+      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).foldLeft(List[JValue]())((l, a) =>
         messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
       ).reverse
       val json = ("count", messages.size) ~ ("items", messages)
@@ -146,7 +152,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     ("contributorName", message.get("contributorName").toString) ~
     ("contributorEmail", message.get("contributorEmail").toString) ~
     ("rating", message.get("rating").asInstanceOf[Double]) ~
-    ("ratingCount", message.get("ratingCount").asInstanceOf[Double])
+    ("ratingCount", message.get("ratingCount").asInstanceOf[Double].toLong)
   }
 
   private def categoryToJSON(o: DBObject) = {

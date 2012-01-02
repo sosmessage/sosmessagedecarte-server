@@ -67,7 +67,8 @@
               </td>
               <td class="align-right rating-col">
                 <div data-rating-start="@message.get("rating")"
-                  data-rating-count="@message.get("ratingCount")"></div> (@message.get("ratingCount") ratings)
+                  data-rating-count="@message.get("ratingCount").asInstanceOf[Double].toLong"></div>
+                (@message.get("ratingCount").asInstanceOf[Double].toLong ratings)
               </td>
               <td class="actions-col">
                 <form action="@routes.Messages.delete(selectedCategoryId, message.get("_id").toString)" method="POST"

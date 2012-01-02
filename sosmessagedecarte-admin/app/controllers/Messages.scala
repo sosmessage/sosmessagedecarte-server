@@ -1,15 +1,14 @@
 package controllers
 
-import _root_.net.liftweb.json.JsonParser._
 import play.api._
 import data._
 import play.api.mvc._
 import com.mongodb.casbah.commons.MongoDBObject
-import com.mongodb.casbah.MongoConnection
 import org.bson.types.ObjectId
 import java.util.Date
 import com.mongodb.DBObject
-import com.mongodb.casbah.Imports._
+import com.mongodb.casbah._
+import map_reduce.MapReduceStandardOutput
 
 case class Message(categoryId: String, text: String, contributorName: String, 
                    contributorEmail: String, approved: Option[String])
@@ -19,11 +18,45 @@ object Messages extends Controller {
   val DataBaseName = "sosmessage"
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
+  val MapReduceMessagesCollectionName = "mapReduceMessages_"
 
   val mongo = MongoConnection()
 
   val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
   val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
+
+  val mapJS = """
+    function() {
+      emit(this._id, this);
+    }
+  """
+
+  val reduceJS = """
+    function(key, values) {
+    }
+  """
+
+  val finalizeJS = """
+    function(key, value) {
+      var count = 0;
+      var total = 0;
+      for (var prop in value.ratings) {
+        count++;
+        total += value.ratings[prop];
+      }
+
+      if (total == 0 || count == 0) {
+        avg = 0;
+      } else {
+        avg = total / count;
+      }
+
+      value.ratingCount = count;
+      value.rating = avg;
+      delete value.ratings;
+      return value;
+    }
+  """
   
   val messageForm = Form(
     of(Message.apply _)(
@@ -43,39 +76,17 @@ object Messages extends Controller {
 
     val selectedCategoryId = categoryId.getOrElse(categories(0).get("_id").toString)
 
-    val messageOrder = MongoDBObject("createdAt" -> -1)
     val q = MongoDBObject("categoryId" -> new ObjectId(selectedCategoryId), "state" -> "approved")
-    val messages = messagesCollection.find(q).sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
-      a :: l
-    ).map(addRating(_)).reverse
+    val resultCollectionName = MapReduceMessagesCollectionName + selectedCategoryId
+    messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+      finalizeFunction = Some(finalizeJS), query = Some(q))
+
+    val messageOrder = MongoDBObject("value.createdAt" -> -1)
+    val messages = mongo(DataBaseName)(resultCollectionName).find().sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
+      a.get("value").asInstanceOf[DBObject] :: l
+    ).reverse
 
     Ok(views.html.messages.index(categories, selectedCategoryId, messages, messageForm))
-  }
-
-  def addRating(message: DBObject) = {
-    val r = """
-    function(doc, out) {
-      for (var prop in doc.ratings) {
-        out.count++;
-        out.total += doc.ratings[prop];
-      }
-    }
-    """
-    val f = """
-    function(out) {
-      if (out.count == 0) {
-        out.avg = 0;
-      } else {
-        out.avg = out.total / out.count;
-      }
-    }
-    """
-    val rating = messagesCollection.group(MongoDBObject("ratings" -> 1),
-      MongoDBObject("_id" -> message.get("_id")), MongoDBObject("count" -> 0, "total" -> 0), r, f)
-    val j = parse(rating.mkString)
-    message.put("rating", j \ "avg" values)
-    message.put("ratingCount", (j \ "count" values).asInstanceOf[Double].toInt)
-    message
   }
 
   def save(selectedCategoryId: String) = Action { implicit request =>
