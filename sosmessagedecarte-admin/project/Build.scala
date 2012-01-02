@@ -1,4 +1,5 @@
 import sbt._
+import sbt.Keys._
 
 import PlayProject._
 import com.typesafe.sbtscalariform.ScalariformPlugin._
@@ -15,6 +16,12 @@ object ApplicationBuild extends Build {
       "commons-lang" % "commons-lang" % "2.6"
     )
 
-    val main = PlayProject(appName, appVersion, appDependencies).settings(defaultScalaSettings:_*).settings(scalariformSettings: _*)
+    val buildSettings =
+      Seq(
+        scalacOptions ++= Seq("-unchecked", "-deprecation")
+    )
+
+    val main = PlayProject(appName, appVersion, appDependencies).settings(defaultScalaSettings:_*)
+      .settings(buildSettings:_*).settings(scalariformSettings: _*)
 
 }

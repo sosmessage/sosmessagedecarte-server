@@ -1,14 +1,11 @@
 package controllers
 
-import play.api._
 import play.api.mvc._
-import play.api.data._
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.MongoConnection
 import org.bson.types.ObjectId
-import com.mongodb.casbah.Imports._
+import com.mongodb.casbah._
 import conf.SosMessageConfiguration
-import com.mongodb.casbah.MongoConnection._
 
 object Moderation extends Controller {
 
