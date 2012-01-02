@@ -7,14 +7,14 @@ import com.mongodb.casbah.MongoConnection
 import com.mongodb.casbah.commons.MongoDBObject
 import net.liftweb.json._
 import java.util.Date
-import com.mongodb.{BasicDBObject, DBObject}
+import com.mongodb.{ BasicDBObject, DBObject }
 
 object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
   import dispatch._
 
   val mockConfig = Configuration("database.host" -> "127.0.0.1",
-        "database.port" -> 27017, "database.name" -> "sosmessagedetest", "server.port" -> 3000)
+    "database.port" -> 27017, "database.name" -> "sosmessagedetest", "server.port" -> 3000)
 
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
@@ -75,7 +75,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
     "retrieve only approved messages in secondCategory" in {
       val secondCategory = categoriesCollection.findOne(MongoDBObject("name" -> "secondCategory")).get
-      val resp = http(host / "api" / "v1" / "categories" / secondCategory .get("_id").toString / "messages" as_str)
+      val resp = http(host / "api" / "v1" / "categories" / secondCategory.get("_id").toString / "messages" as_str)
       val json = parse(resp)
 
       json \ "count" must_== JInt(2)
@@ -112,7 +112,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     "create a message in the given category" in {
       val fourthCategory = categoriesCollection.findOne(MongoDBObject("name" -> "fourthCategory")).get
       http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "test message")  >|)
+        << Map("text" -> "test message") >|)
 
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
@@ -131,7 +131,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     "create a message in the given category with a contributor name" in {
       val fourthCategory = categoriesCollection.findOne(MongoDBObject("name" -> "fourthCategory")).get
       http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "bender message", "contributorName" -> "Bender")  >|)
+        << Map("text" -> "bender message", "contributorName" -> "Bender") >|)
 
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
@@ -151,7 +151,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     "create a message in the given category with a contributor email" in {
       val fourthCategory = categoriesCollection.findOne(MongoDBObject("name" -> "fourthCategory")).get
       http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "leela message", "contributorEmail" -> "Leela")  >|)
+        << Map("text" -> "leela message", "contributorEmail" -> "Leela") >|)
 
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
@@ -172,19 +172,19 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       val q = MongoDBObject("text" -> "Second message in second category")
       var message = messagesCollection.findOne(q).get
 
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "4")  >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "4") >|)
       message = messagesCollection.findOne(q).get
       var ratings = message.get("ratings").asInstanceOf[BasicDBObject]
       ratings.containsField("iphone1") mustBe true
       ratings.getLong("iphone1") must_== 4
 
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "2")  >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "2") >|)
       message = messagesCollection.findOne(q).get
       ratings = message.get("ratings").asInstanceOf[BasicDBObject]
       ratings.containsField("iphone1") mustBe true
       ratings.getLong("iphone1") must_== 2
 
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "3")  >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "3") >|)
       message = messagesCollection.findOne(q).get
       ratings = message.get("ratings").asInstanceOf[BasicDBObject]
       ratings.containsField("iphone1") mustBe true
@@ -195,14 +195,14 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
     "retrieve rating with message" in {
       val message = messagesCollection.findOne(MongoDBObject("text" -> "First message in third category")).get
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "3")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone2", "rating" -> "4")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone3", "rating" -> "1")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone4", "rating" -> "3")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "2")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android2", "rating" -> "4")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android3", "rating" -> "3")  >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android4", "rating" -> "4")  >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "3") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone2", "rating" -> "4") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone3", "rating" -> "1") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone4", "rating" -> "3") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "2") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android2", "rating" -> "4") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android3", "rating" -> "3") >|)
+      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android4", "rating" -> "4") >|)
 
       val thirdCategory = categoriesCollection.findOne(MongoDBObject("name" -> "thirdCategory")).get
       val resp = http(host / "api" / "v1" / "categories" / thirdCategory.get("_id").toString / "message" as_str)

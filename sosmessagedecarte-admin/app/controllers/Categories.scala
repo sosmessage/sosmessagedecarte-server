@@ -11,7 +11,7 @@ import com.mongodb.DBObject
 import com.mongodb.casbah._
 import conf.SosMessageConfiguration
 
-case class Category(name: String,  color: String)
+case class Category(name: String, color: String)
 
 object Categories extends Controller {
 
@@ -30,7 +30,7 @@ object Categories extends Controller {
   val categoryForm = Form(
     of(Category.apply _)(
       "name" -> requiredText,
-      "color" -> text (minLength = 9)
+      "color" -> text(minLength = 9)
     )
   )
 
@@ -69,7 +69,7 @@ object Categories extends Controller {
     )
   }
 
-  def delete (id: String) = Action { implicit request =>
+  def delete(id: String) = Action { implicit request =>
     val oid = new ObjectId(id)
     val o = MongoDBObject("_id" -> oid)
     categoriesCollection.remove(o)
@@ -92,7 +92,7 @@ object Categories extends Controller {
       category => {
         val q = MongoDBObject("_id" -> new ObjectId(id))
         val color = if (category.color.startsWith("#")) category.color else "#" + category.color
-        val o = $set ("name" -> category.name, "color" -> color, "modifiedAt" -> new Date())
+        val o = $set("name" -> category.name, "color" -> color, "modifiedAt" -> new Date())
         categoriesCollection.update(q, o, false, false)
         Redirect(routes.Categories.index).flashing("actionDone" -> "categoryUpdated")
       }
@@ -125,12 +125,12 @@ object Categories extends Controller {
       val index = categories.indexOf(selectedCategory)
       if (index > 0) {
         var q = MongoDBObject("_id" -> selectedCategory.get("_id"))
-        var o = $inc ("order" -> 1)
+        var o = $inc("order" -> 1)
         categoriesCollection.update(q, o, false, false)
 
         var categoryBefore = categories(index - 1)
         q = MongoDBObject("_id" -> categoryBefore.get("_id"))
-        o = $inc ("order" -> -1)
+        o = $inc("order" -> -1)
         categoriesCollection.update(q, o, false, false)
       }
     }
@@ -148,12 +148,12 @@ object Categories extends Controller {
       val index = categories.indexOf(selectedCategory)
       if (index < categories.size - 1) {
         var q = MongoDBObject("_id" -> selectedCategory.get("_id"))
-        var o = $inc ("order" -> -1)
+        var o = $inc("order" -> -1)
         categoriesCollection.update(q, o, false, false)
 
         var categoryAfter = categories(index + 1)
         q = MongoDBObject("_id" -> categoryAfter.get("_id"))
-        o = $inc ("order" -> 1)
+        o = $inc("order" -> 1)
         categoriesCollection.update(q, o, false, false)
       }
     }

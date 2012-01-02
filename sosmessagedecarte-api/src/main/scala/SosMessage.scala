@@ -135,35 +135,34 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
       val Params(form) = req
       val uid = form("uid")(0)
-      val rating = if(form("rating")(0).toInt > 4) 4 else form("rating")(0).toInt
-      val key = "ratings." + uid.replaceAll ("\\.", "-")
-      messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set (key -> rating), false, false)
+      val rating = if (form("rating")(0).toInt > 4) 4 else form("rating")(0).toInt
+      val key = "ratings." + uid.replaceAll("\\.", "-")
+      messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set(key -> rating), false, false)
       req.respond(NoContent)
   }
 
   private def messageToJSON(message: DBObject) = {
     ("id", message.get("_id").toString) ~
-    ("type", "message") ~
-    ("category", message.get("category").toString) ~
-    ("categoryId", message.get("categoryId").toString) ~
-    ("text", message.get("text").toString) ~
-    ("createdAt", message.get("createdAt").toString) ~
-    ("modifiedAt", message.get("modifiedAt").toString) ~
-    ("contributorName", message.get("contributorName").toString) ~
-    ("contributorEmail", message.get("contributorEmail").toString) ~
-    ("rating", message.get("rating").asInstanceOf[Double]) ~
-    ("ratingCount", message.get("ratingCount").asInstanceOf[Double].toLong)
+      ("type", "message") ~
+      ("category", message.get("category").toString) ~
+      ("categoryId", message.get("categoryId").toString) ~
+      ("text", message.get("text").toString) ~
+      ("createdAt", message.get("createdAt").toString) ~
+      ("modifiedAt", message.get("modifiedAt").toString) ~
+      ("contributorName", message.get("contributorName").toString) ~
+      ("contributorEmail", message.get("contributorEmail").toString) ~
+      ("rating", message.get("rating").asInstanceOf[Double]) ~
+      ("ratingCount", message.get("ratingCount").asInstanceOf[Double].toLong)
   }
 
   private def categoryToJSON(o: DBObject) = {
     ("id", o.get("_id").toString) ~
-    ("type", "category") ~
-    ("name", o.get("name").toString) ~
-    ("color", o.get("color").toString)
+      ("type", "category") ~
+      ("name", o.get("name").toString) ~
+      ("color", o.get("color").toString)
   }
 
 }
-
 
 object AppServer {
 

@@ -1,6 +1,7 @@
 import sbt._
 
 import PlayProject._
+import com.typesafe.sbtscalariform.ScalariformPlugin._
 
 object ApplicationBuild extends Build {
 
@@ -14,7 +15,6 @@ object ApplicationBuild extends Build {
       "commons-lang" % "commons-lang" % "2.6"
     )
 
-    val main = PlayProject(appName, appVersion, appDependencies).settings(defaultScalaSettings:_*).settings(
-    )
+    val main = PlayProject(appName, appVersion, appDependencies).settings(defaultScalaSettings:_*).settings(scalariformSettings: _*)
 
 }

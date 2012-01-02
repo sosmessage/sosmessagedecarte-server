@@ -63,11 +63,11 @@ object Moderation extends Controller {
   }
 
   def approveAll(state: String) = Action { implicit request =>
-    messagesCollection.update(MongoDBObject("state" -> state), $set ("state" -> "approved"), false, true)
+    messagesCollection.update(MongoDBObject("state" -> state), $set("state" -> "approved"), false, true)
     Redirect(routes.Moderation.index("waiting")).flashing("actionDone" -> (state + "MessagesApproved"))
   }
   def rejectAll(state: String) = Action { implicit request =>
-    messagesCollection.update(MongoDBObject("state" -> state), $set ("state" -> "rejected"), false, true)
+    messagesCollection.update(MongoDBObject("state" -> state), $set("state" -> "rejected"), false, true)
     Redirect(routes.Moderation.index("waiting")).flashing("actionDone" -> (state + "MessagesRejected"))
   }
 

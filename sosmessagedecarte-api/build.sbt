@@ -17,3 +17,5 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
+
+seq(scalariformSettings: _*)

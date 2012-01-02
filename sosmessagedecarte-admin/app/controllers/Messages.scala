@@ -13,7 +13,7 @@ import conf.SosMessageConfiguration
 import com.mongodb.casbah.MongoConnection._
 
 case class Message(categoryId: String, text: String, contributorName: String,
-                   contributorEmail: String, approved: Option[String])
+  contributorEmail: String, approved: Option[String])
 
 object Messages extends Controller {
 
@@ -155,7 +155,7 @@ object Messages extends Controller {
       message => {
         val newCategoryId = message.categoryId
         val q = MongoDBObject("_id" -> new ObjectId(messageId))
-        val o = $set ("categoryId" -> new ObjectId(newCategoryId), "text" -> message.text,
+        val o = $set("categoryId" -> new ObjectId(newCategoryId), "text" -> message.text,
           "contributorName" -> message.contributorName, "contributorEmail" -> message.contributorEmail,
           "modifiedAt" -> new Date())
         messagesCollection.update(q, o, false, false)
