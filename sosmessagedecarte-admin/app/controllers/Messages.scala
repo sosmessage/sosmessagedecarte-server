@@ -9,21 +9,26 @@ import java.util.Date
 import com.mongodb.DBObject
 import com.mongodb.casbah._
 import map_reduce.MapReduceStandardOutput
+import conf.SosMessageConfiguration
+import com.mongodb.casbah.MongoConnection._
 
-case class Message(categoryId: String, text: String, contributorName: String, 
+case class Message(categoryId: String, text: String, contributorName: String,
                    contributorEmail: String, approved: Option[String])
 
 object Messages extends Controller {
 
-  val DataBaseName = "sosmessage"
-  val MessagesCollectionName = "messages"
+  val config = SosMessageConfiguration.getConfig
+
   val CategoriesCollectionName = "categories"
+  val MessagesCollectionName = "messages"
   val MapReduceMessagesCollectionName = "mapReduceMessages_"
 
-  val mongo = MongoConnection()
+  val dataBaseName = config[String]("database.name", "sosmessage")
 
-  val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
-  val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
+  val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
+
+  val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
+  val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
 
   val mapJS = """
     function() {
@@ -57,7 +62,7 @@ object Messages extends Controller {
       return value;
     }
   """
-  
+
   val messageForm = Form(
     of(Message.apply _)(
       "categoryId" -> requiredText,
@@ -82,7 +87,7 @@ object Messages extends Controller {
       finalizeFunction = Some(finalizeJS), query = Some(q))
 
     val messageOrder = MongoDBObject("value.createdAt" -> -1)
-    val messages = mongo(DataBaseName)(resultCollectionName).find().sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
+    val messages = mongo(dataBaseName)(resultCollectionName).find().sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
       a.get("value").asInstanceOf[DBObject] :: l
     ).reverse
 

@@ -9,19 +9,23 @@ import org.bson.types.ObjectId
 import java.util.Date
 import com.mongodb.DBObject
 import com.mongodb.casbah._
+import conf.SosMessageConfiguration
 
 case class Category(name: String,  color: String)
 
 object Categories extends Controller {
 
-  val DataBaseName = "sosmessage"
+  val config = SosMessageConfiguration.getConfig
+
   val CategoriesCollectionName = "categories"
   val MessagesCollectionName = "messages"
 
-  val mongo = MongoConnection()
+  val dataBaseName = config[String]("database.name", "sosmessage")
 
-  val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
-  val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
+  val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
+
+  val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
+  val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
 
   val categoryForm = Form(
     of(Category.apply _)(

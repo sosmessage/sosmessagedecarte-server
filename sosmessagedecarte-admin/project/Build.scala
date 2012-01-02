@@ -8,13 +8,13 @@ object ApplicationBuild extends Build {
     val appVersion      = "1.1-SNAPSHOT"
 
     val appDependencies = Seq(
+      "org.streum" %% "configrity" % "0.9.0",
       "com.mongodb.casbah" %% "casbah" % "3.0.0-SNAPSHOT",
       "net.liftweb" %% "lift-json" % "2.4-M4",
       "commons-lang" % "commons-lang" % "2.6"
     )
 
     val main = PlayProject(appName, appVersion, appDependencies).settings(defaultScalaSettings:_*).settings(
-      // Add your own project settings here
     )
 
 }

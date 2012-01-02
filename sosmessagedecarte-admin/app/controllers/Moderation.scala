@@ -7,17 +7,22 @@ import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.MongoConnection
 import org.bson.types.ObjectId
 import com.mongodb.casbah.Imports._
+import conf.SosMessageConfiguration
+import com.mongodb.casbah.MongoConnection._
 
 object Moderation extends Controller {
 
-  val DataBaseName = "sosmessage"
-  val MessagesCollectionName = "messages"
+  val config = SosMessageConfiguration.getConfig
+
   val CategoriesCollectionName = "categories"
+  val MessagesCollectionName = "messages"
 
-  val mongo = MongoConnection()
+  val dataBaseName = config[String]("database.name", "sosmessage")
 
-  val messagesCollection = mongo(DataBaseName)(MessagesCollectionName)
-  val categoriesCollection = mongo(DataBaseName)(CategoriesCollectionName)
+  val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
+
+  val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
+  val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
 
   def index(state: String = "waiting") = Action { implicit request =>
     val messageOrder = MongoDBObject("createdAt" -> -1)
