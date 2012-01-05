@@ -120,14 +120,6 @@
                 }
               </div>
               <div class="clearfix">
-                @newMessageForm.forField("contributorEmail") { field =>
-                  <label for="@field.name">Contributor Email</label>
-                  <div class="input">
-                    <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
-                  </div>
-                }
-              </div>
-              <div class="clearfix">
                 @newMessageForm.forField("approved") { field =>
                   <label for="@field.name">Approved</label>
                   <div class="input">

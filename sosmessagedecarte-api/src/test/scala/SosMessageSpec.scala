@@ -148,26 +148,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       message.get("category").toString must_== fourthCategory.get("name").toString
     }
 
-    "create a message in the given category with a contributor email" in {
-      val fourthCategory = categoriesCollection.findOne(MongoDBObject("name" -> "fourthCategory")).get
-      http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "leela message", "contributorEmail" -> "Leela") >|)
-
-      val messageOrder = MongoDBObject("createdAt" -> -1)
-      val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
-      val keys = MongoDBObject("category" -> 1, "categoryId" -> 1, "text" -> 1, "contributorEmail" -> 1, "createdAt" -> 1)
-      val messages = messagesCollection.find(q, keys).sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
-        a :: l
-      ).reverse
-
-      messages.size must_== 1
-      val message = messages(0)
-      message.get("text").toString must_== "leela message"
-      message.get("contributorEmail").toString must_== "Leela"
-      message.get("categoryId").toString must_== fourthCategory.get("_id").toString
-      message.get("category").toString must_== fourthCategory.get("name").toString
-    }
-
     "rate a given message" in {
       val q = MongoDBObject("text" -> "Second message in second category")
       var message = messagesCollection.findOne(q).get
@@ -272,7 +252,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "First message in first category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "approved"
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 10000)
@@ -285,7 +264,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Second message in first category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "waiting"
     builder += "createdAt" -> new Date(date.getTime + 15000)
     builder += "modifiedAt" -> new Date(date.getTime + 15000)
@@ -297,7 +275,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Third message in first category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -309,7 +286,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "First message in second category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -321,7 +297,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "Second message in second category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -333,7 +308,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> thirdCategory.get("name")
     builder += "text" -> "First message in third category"
     builder += "contributorName" -> ""
-    builder += "contributorEmail" -> ""
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)

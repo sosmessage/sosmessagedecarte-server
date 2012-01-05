@@ -117,13 +117,6 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
           case None =>
             builder += "contributorName" -> ""
         }
-        form.get("contributorEmail") match {
-          case Some(param) =>
-            builder += "contributorEmail" -> param(0)
-          case None =>
-            builder += "contributorEmail" -> ""
-        }
-
         builder += "state" -> "waiting"
         builder += "createdAt" -> new Date()
         builder += "modifiedAt" -> new Date()
@@ -150,7 +143,6 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("createdAt", message.get("createdAt").toString) ~
       ("modifiedAt", message.get("modifiedAt").toString) ~
       ("contributorName", message.get("contributorName").toString) ~
-      ("contributorEmail", message.get("contributorEmail").toString) ~
       ("rating", message.get("rating").asInstanceOf[Double]) ~
       ("ratingCount", message.get("ratingCount").asInstanceOf[Double].toLong)
   }
