@@ -44,10 +44,29 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     function(key, value) {
       var count = 0;
       var total = 0;
+      var votePlus = 0;
+      var voteMinus = 0;
+      var userVote = 0;
       for (var prop in value.ratings) {
+        var rating = value.ratings[prop];
+        var vote = rating == 1 ? -1 : 1
+        if (prop == uid) {
+          userVote = vote
+        }
+
+        if (vote == 1) {
+          votePlus++;
+        } else {
+          voteMinus++;
+        }
+
         count++;
         total += value.ratings[prop];
       }
+
+      value.votePlus = votePlus;
+      value.voteMinus = voteMinus;
+      value.userVote = userVote;
 
       if (total == 0 || count == 0) {
         avg = 0;
@@ -57,7 +76,9 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
       value.ratingCount = count;
       value.rating = avg;
+
       delete value.ratings;
+
       return value;
     }
   """
@@ -95,9 +116,15 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       if (!messages.isEmpty) {
         val message = messages.next()
 
+        val Params(form) = req
+        val jsScope = form.get("uid") match {
+          case Some(param) => Some(MongoDBObject("uid" -> param))
+          case None => Some(MongoDBObject("uid" -> ""))
+        }
+
         val q = MongoDBObject("_id" -> message.get("_id"))
         val res = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
-          finalizeFunction = Some(finalizeJS), query = Some(q)).next()
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope).next()
         val json = messageToJSON(res.get("value").asInstanceOf[DBObject])
         req.respond(JsonContent ~> ResponseString(pretty(render(json))))
       } else {
@@ -128,10 +155,29 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
       val Params(form) = req
       val uid = form("uid")(0)
-      val rating = if (form("rating")(0).toInt > 4) 4 else form("rating")(0).toInt
+      val rating = if (form("rating")(0).toInt > 5) 5 else form("rating")(0).toInt
       val key = "ratings." + uid.replaceAll("\\.", "-")
       messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set(key -> rating), false, false)
       req.respond(NoContent)
+
+    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "vote" :: Nil))) =>
+      val Params(form) = req
+      val uid = form("uid")(0)
+      val vote = form("vote")(0).toInt
+      if (vote != 1 && vote != -1) {
+        req.respond(NoContent)
+      } else {
+        val rating = if (vote == 1) 5 else 1
+        val key = "ratings." + uid.replaceAll("\\.", "-")
+        val q = MongoDBObject("_id" -> new ObjectId(messageId))
+        messagesCollection.update(q, $set(key -> rating), false, false)
+
+        val jsScope = Some(MongoDBObject("uid" -> uid))
+        val res = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope).next()
+        val json = messageToJSON(res.get("value").asInstanceOf[DBObject])
+        req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+      }
   }
 
   private def messageToJSON(message: DBObject) = {
@@ -143,8 +189,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("createdAt", message.get("createdAt").toString) ~
       ("modifiedAt", message.get("modifiedAt").toString) ~
       ("contributorName", message.get("contributorName").toString) ~
-      ("rating", message.get("rating").asInstanceOf[Double]) ~
-      ("ratingCount", message.get("ratingCount").asInstanceOf[Double].toLong)
+      ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~ ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~ ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
+      ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~ ("value", message.get("rating").asInstanceOf[Double]))
   }
 
   private def categoryToJSON(o: DBObject) = {
