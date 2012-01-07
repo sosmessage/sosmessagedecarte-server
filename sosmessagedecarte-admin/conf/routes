@@ -5,16 +5,24 @@
 # Home page
 GET       /admin                                          controllers.Application.index()
 
+# Apps
+GET       /admin/apps                               controllers.SosMessageApps.index()
+POST      /admin/apps                               controllers.SosMessageApps.save()
+POST      /admin/apps/:id/delete                    controllers.SosMessageApps.delete(id: String)
+GET       /admin/apps/:appId/categories             controllers.SosMessageApps.categories(appId: String)
+POST      /admin/apps/:appId/categories             controllers.SosMessageApps.addCategory(appId: String)
+POST      /admin/apps/:appId/categories/:categoryId/remove            controllers.SosMessageApps.removeCategory(appId: String, categoryId: String)
+POST      /admin/apps/:appId/categories/:categoryId/moveup            controllers.SosMessageApps.moveCategoryUp(appId: String, categoryId: String)
+POST      /admin/apps/:appId/categories/:categoryId/movedown          controllers.SosMessageApps.moveCategoryDown(appId: String, categoryId: String)
+POST      /admin/apps/:appId/categories/:categoryId/publish           controllers.SosMessageApps.publishCategory(appId: String, categoryId: String)
+POST      /admin/apps/:appId/categories/:categoryId/unpublish         controllers.SosMessageApps.unpublishCategory(appId: String, categoryId: String)
+
 # Categories
 GET       /admin/categories                               controllers.Categories.index()
 POST      /admin/categories                               controllers.Categories.save()
 POST      /admin/categories/:id/delete                    controllers.Categories.delete(id: String)
 GET       /admin/categories/:categoryId                   controllers.Categories.edit(categoryId: String)
 POST      /admin/categories/:categoryId                   controllers.Categories.update(categoryId: String)
-POST      /admin/categories/:categoryId/moveup            controllers.Categories.moveUp(categoryId: String)
-POST      /admin/categories/:categoryId/movedown          controllers.Categories.moveDown(categoryId: String)
-POST      /admin/categories/:categoryId/publish           controllers.Categories.publish(categoryId: String)
-POST      /admin/categories/:categoryId/unpublish         controllers.Categories.unpublish(categoryId: String)
 
 # Messages
 GET       /admin/messages                                             controllers.Messages.index(categoryId: Option[String] = None)

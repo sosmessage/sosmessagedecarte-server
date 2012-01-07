@@ -87,7 +87,7 @@ object Messages extends Controller {
         finalizeFunction = Some(finalizeJS), query = Some(q))
 
       val messageOrder = MongoDBObject("value.createdAt" -> -1)
-      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
+      val messages = mongo(dataBaseName)(resultCollectionName).find().limit(200).sort(messageOrder).foldLeft(List[DBObject]())((l, a) =>
         a.get("value").asInstanceOf[DBObject] :: l
       ).reverse
 

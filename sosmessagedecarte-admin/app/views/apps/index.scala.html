@@ -1,0 +1,86 @@
+@(
+  apps: List[com.mongodb.DBObject],
+  newAppForm: play.api.data.Form[controllers.SosMessageApp]
+)(implicit flash: play.api.mvc.Flash)
+
+@main(selectedTab = "apps", actionDone = flash.get("actionDone")) {
+
+  <section id="apps">
+
+    <div class="apps-container">
+      <div class="page-header">
+        <h1>Apps</h1>
+      </div>
+
+      <p>
+        <a class="btn primary main-add-button"
+         data-controls-modal="new-app-modal"
+         data-backdrop="static"
+         data-keyboard="true">Add app</a>
+      </p>
+
+      <div style="clear:both;"></div>
+
+      <table class="zebra-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th class="delete-message-col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @apps.map { app =>
+            <tr>
+              <td>
+                <a href="@routes.SosMessageApps.categories(app.get("_id").toString)">@app.get("name")</a>
+              </td>
+              <td>
+                <a href="@routes.SosMessageApps.categories(app.get("_id").toString)">@app.get("title")</a>
+              </td>
+              <td class="actions-col">
+                <form action="@routes.SosMessageApps.delete(app.get("_id").toString)" method="POST"
+                  style="margin-bottom:0">
+                  <button class="btn small danger delete-app" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div id="new-app-modal" class="modal hide">
+      <div class="modal-header">
+        <a href="#" class="close">x</a>
+        <h3>New App</h3>
+      </div>
+      <div class="modal-body">
+        <form action="@routes.SosMessageApps.save" method="POST" class="form-stacked" accept-charset="UTF-8">
+          <fieldset>
+            <div class="clearfix">
+              @newAppForm.forField("name") { field =>
+                <label for="@field.name">Name</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newAppForm.forField("title") { field =>
+                <label for="@field.name">Title</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button class="btn small primary" type="submit">Add</button>
+            <button type="reset" class="btn small"  onclick="$('#new-app-modal').modal('hide'); return false;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </section>
+
+}

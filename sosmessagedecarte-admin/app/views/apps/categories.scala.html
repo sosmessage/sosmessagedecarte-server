@@ -1,0 +1,124 @@
+@(
+  app: com.mongodb.DBObject,
+  categories: List[com.mongodb.DBObject],
+  messagesCountByCategory: Map[String, Long],
+  nonAppCategories: List[com.mongodb.DBObject],
+  addCategoryForm: play.api.data.Form[controllers.NewCategory]
+)(implicit flash: play.api.mvc.Flash)
+
+@main(selectedTab = "apps", actionDone = flash.get("actionDone")) {
+
+  <section id="categories">
+
+    <div class="categories-container">
+      <div class="page-header">
+        <h1>Categories of @app.get("title")</h1>
+      </div>
+
+      <p>
+        <a class="btn primary main-add-button"
+         data-controls-modal="new-category-modal"
+         data-backdrop="static"
+         data-keyboard="true">Add category</a>
+      </p>
+
+      <div style="clear:both;"></div>
+
+      <table class="zebra-striped">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Color</th>
+            <th>State</th>
+            <th class="delete-message-col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @categories.map { category =>
+            <tr>
+              <td>
+                @if(categories.indexOf(category) > 0) {
+                  <form action="@routes.SosMessageApps.moveCategoryUp(app.get("_id").toString, category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <input class="up-down-arrow" type="image" title="Move category up"
+                      alt="Move category up" src="@routes.Assets.at("images/up.gif")" type="submit">
+                  </form>
+                }
+                @if(categories.indexOf(category) < categories.size - 1) {
+                  <form action="@routes.SosMessageApps.moveCategoryDown(app.get("_id").toString, category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <input class="up-down-arrow" type="image" title="Move category down"
+                      alt="Move category down" src="@routes.Assets.at("images/down.gif")" type="submit">
+                  </form>
+                }
+              </td>
+              <td>
+                <a href="@routes.Messages.index(Some(category.get("_id").toString))">@category.get("name")</a>
+                &nbsp;(@messagesCountByCategory(category.get("_id").toString))
+              </td>
+              <td>
+                <div class="color-div" style="background-color: #@category.get("color").toString.substring(3)"></div>
+              </td>
+              <td>
+                @if(category.get("apps").asInstanceOf[com.mongodb.DBObject].get(app.get("name").toString).asInstanceOf[com.mongodb.DBObject].get("published").asInstanceOf[Boolean]) {
+                  <span class="label success">published</span>
+                } else {
+                  <span class="label">unpublished</span>
+                }
+              </td>
+              <td class="actions-col">
+                <form action="@routes.SosMessageApps.removeCategory(app.get("_id").toString, category.get("_id").toString)" method="POST"
+                  style="margin-bottom:0">
+                  <button class="btn small danger remove-category" type="submit">Remove</button>
+                </form>
+                @if(category.get("apps").asInstanceOf[com.mongodb.DBObject].get(app.get("name").toString).asInstanceOf[com.mongodb.DBObject].get("published").asInstanceOf[Boolean]) {
+                  <form action="@routes.SosMessageApps.unpublishCategory(app.get("_id").toString, category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <button class="btn small publish-button" type="submit">Unpublish</button>
+                  </form>
+                } else {
+                  <form action="@routes.SosMessageApps.publishCategory(app.get("_id").toString, category.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <button class="btn small success publish-button" type="submit">Publish</button>
+                  </form>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div id="new-category-modal" class="modal hide">
+      <div class="modal-header">
+        <a href="#" class="close">x</a>
+        <h3>Add a Category</h3>
+      </div>
+      <div class="modal-body">
+        <form action="@routes.SosMessageApps.addCategory(app.get("_id").toString)" method="POST" class="form-stacked" accept-charset="UTF-8">
+          <fieldset>
+            <div class="clearfix">
+              @addCategoryForm.forField("id") { field =>
+                <label for="@field.name">Category</label>
+                <div class="input">
+                  <select id="@field.name" name="@field.name" type="text" value="@field.value">
+                    @nonAppCategories.map { nonAppCategory =>
+                      <option value="@nonAppCategory.get("_id").toString">@nonAppCategory.get("name")</option>
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button class="btn small primary" type="submit">Add</button>
+            <button type="reset" class="btn small"  onclick="$('#new-category-modal').modal('hide'); return false;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </section>
+
+}

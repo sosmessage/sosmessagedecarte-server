@@ -21,6 +21,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   val CategoriesCollectionName = "categories"
   val MapReduceMessagesCollectionName = "mapReduceMessages_"
 
+  val DefaultSosMessageAppName = "smdc"
+
   val dataBaseName = config[String]("database.name", "sosmessage")
 
   val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
@@ -85,8 +87,14 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
   def intent = {
     case req @ GET(Path("/api/v1/categories")) =>
-      val categoryOrder = MongoDBObject("order" -> -1)
-      val q = MongoDBObject("published" -> true)
+      val Params(form) = req
+      val appName = form.get("appname") match {
+        case Some(params) => params(0)
+        case None => DefaultSosMessageAppName
+      }
+
+      val categoryOrder = MongoDBObject("apps." + appName + ".order" -> -1)
+      val q = MongoDBObject("apps." + appName + ".published" -> true)
       val categories = categoriesCollection.find(q).sort(categoryOrder).foldLeft(List[JValue]())((l, a) =>
         categoryToJSON(a) :: l
       ).reverse

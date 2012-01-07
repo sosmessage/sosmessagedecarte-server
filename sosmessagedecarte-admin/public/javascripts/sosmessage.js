@@ -1,4 +1,9 @@
 $(document).ready(function() {
+  $('.delete-app').each(function() {
+    $(this).click(function() {
+      return confirm("Are you sure you want to delete this app?");
+    }) ;
+  });
   $('.delete-category').each(function() {
     $(this).click(function() {
       return confirm("Are you sure you want to delete this category?");
@@ -7,6 +12,11 @@ $(document).ready(function() {
   $('.delete-message').each(function() {
     $(this).click(function() {
       return confirm("Are you sure you want to delete this message?");
+    }) ;
+  });
+  $('.remove-category').each(function() {
+    $(this).click(function() {
+      return confirm("Are you sure you want to remove this category from the app?");
     }) ;
   });
   $('.approve-button').each(function() {
