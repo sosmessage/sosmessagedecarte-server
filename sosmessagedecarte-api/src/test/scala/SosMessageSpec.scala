@@ -3,8 +3,7 @@ package fr.arnk.sosmessage
 import org.specs._
 
 import org.streum.configrity.Configuration
-import com.mongodb.casbah.MongoConnection
-import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah._
 import net.liftweb.json._
 import java.util.Date
 import com.mongodb.{ BasicDBObject, DBObject }
@@ -240,42 +239,44 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
   }
 
   def createCategories() {
+    val appKey = "apps.smdc"
+
     val date = new Date()
     var builder = MongoDBObject.newBuilder
     builder += "name" -> "firstCategory"
     builder += "color" -> "#000"
     builder += "createdAt" -> date
     builder += "modifiedAt" -> date
-    builder += "published" -> true
-    builder += "order" -> 3
     categoriesCollection += builder.result
+    categoriesCollection.update(MongoDBObject("name" -> "firstCategory"), $set(appKey ->
+      MongoDBObject("published" -> true, "order" -> 3), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
     builder += "name" -> "secondCategory"
     builder += "color" -> "#fff"
     builder += "createdAt" -> new Date(date.getTime + 10000)
     builder += "modifiedAt" -> new Date(date.getTime + 10000)
-    builder += "published" -> true
-    builder += "order" -> 2
     categoriesCollection += builder.result
+    categoriesCollection.update(MongoDBObject("name" -> "secondCategory"), $set(appKey ->
+      MongoDBObject("published" -> true, "order" -> 2), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
     builder += "name" -> "thirdCategory"
     builder += "color" -> "#0f0"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
-    builder += "published" -> false
-    builder += "order" -> 1
     categoriesCollection += builder.result
+    categoriesCollection.update(MongoDBObject("name" -> "thirdCategory"), $set(appKey ->
+      MongoDBObject("published" -> false, "order" -> 1), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
     builder += "name" -> "fourthCategory"
     builder += "color" -> "#00f"
     builder += "createdAt" -> new Date()
     builder += "modifiedAt" -> new Date()
-    builder += "published" -> true
-    builder += "order" -> 0
     categoriesCollection += builder.result
+    categoriesCollection.update(MongoDBObject("name" -> "fourthCategory"), $set(appKey ->
+      MongoDBObject("published" -> true, "order" -> 0), "modifiedAt" -> new Date()), false, false)
   }
 
   def createMessages() {
