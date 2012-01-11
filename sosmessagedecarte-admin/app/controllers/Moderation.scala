@@ -6,6 +6,7 @@ import com.mongodb.casbah.MongoConnection
 import org.bson.types.ObjectId
 import com.mongodb.casbah._
 import conf.SosMessageConfiguration
+import java.util.Date
 
 object Moderation extends Controller {
 
@@ -32,9 +33,14 @@ object Moderation extends Controller {
 
   def approve(messageId: String, selectedTab: String) = Action { implicit request =>
     val oid = new ObjectId(messageId)
-    var o = messagesCollection.findOne(MongoDBObject("_id" -> oid)).get
-    o += ("state" -> "approved")
-    messagesCollection.save(o)
+    var message = messagesCollection.findOne(MongoDBObject("_id" -> oid)).get
+    message += ("state" -> "approved")
+    messagesCollection.save(message)
+
+    val q = MongoDBObject("_id" -> message.get("categoryId"))
+    val o = $set("lastAddedMessageAt" -> new Date())
+    categoriesCollection.update(q, o, false, false)
+
     Redirect(routes.Moderation.index(selectedTab)).flashing("actionDone" -> "messageApproved")
   }
 
@@ -60,6 +66,16 @@ object Moderation extends Controller {
   }
 
   def approveAll(state: String) = Action { implicit request =>
+    val keys = MongoDBObject("categoryId" -> 1)
+    val categoryIds = messagesCollection.find(MongoDBObject("state" -> state), keys).foldLeft(List[ObjectId]())((l, a) =>
+      a.get("categoryId").asInstanceOf[ObjectId] :: l
+    ).distinct
+    categoryIds.map { id =>
+      val q = MongoDBObject("_id" -> id)
+      val o = $set("lastAddedMessageAt" -> new Date())
+      categoriesCollection.update(q, o, false, false)
+    }
+
     messagesCollection.update(MongoDBObject("state" -> state), $set("state" -> "approved"), false, true)
     Redirect(routes.Moderation.index("waiting")).flashing("actionDone" -> (state + "MessagesApproved"))
   }

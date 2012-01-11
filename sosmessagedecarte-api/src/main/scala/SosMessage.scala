@@ -281,7 +281,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
     ("id", o.get("_id").toString) ~
       ("type", "category") ~
       ("name", o.get("name").toString) ~
-      ("color", o.get("color").toString)
+      ("color", o.get("color").toString) ~
+      ("lastAddedMessageAt", o.get("lastAddedMessageAt").toString)
   }
 
 }

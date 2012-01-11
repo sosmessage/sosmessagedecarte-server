@@ -102,8 +102,8 @@ object Messages extends Controller {
         },
         message => {
           val oid = new ObjectId(message.categoryId)
-          val o = MongoDBObject("_id" -> oid)
-          val category = categoriesCollection.findOne(o).get
+          val q = MongoDBObject("_id" -> oid)
+          val category = categoriesCollection.findOne(q).get
           val builder = MongoDBObject.newBuilder
           builder += "categoryId" -> category.get("_id")
           builder += "category" -> category.get("name")
@@ -115,6 +115,8 @@ object Messages extends Controller {
               "messageWaiting"
             case Some(s) =>
               builder += "state" -> "approved"
+              val o = $set("lastAddedMessageAt" -> new Date())
+              categoriesCollection.update(q, o, false, false)
               "messageAdded"
           }
           builder += "createdAt" -> new Date()

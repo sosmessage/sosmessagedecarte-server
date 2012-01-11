@@ -247,6 +247,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "color" -> "#000"
     builder += "createdAt" -> date
     builder += "modifiedAt" -> date
+    builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
     categoriesCollection.update(MongoDBObject("name" -> "firstCategory"), $set(appKey ->
       MongoDBObject("published" -> true, "order" -> 3), "modifiedAt" -> new Date()), false, false)
@@ -256,6 +257,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "color" -> "#fff"
     builder += "createdAt" -> new Date(date.getTime + 10000)
     builder += "modifiedAt" -> new Date(date.getTime + 10000)
+    builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
     categoriesCollection.update(MongoDBObject("name" -> "secondCategory"), $set(appKey ->
       MongoDBObject("published" -> true, "order" -> 2), "modifiedAt" -> new Date()), false, false)
@@ -265,6 +267,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "color" -> "#0f0"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
+    builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
     categoriesCollection.update(MongoDBObject("name" -> "thirdCategory"), $set(appKey ->
       MongoDBObject("published" -> false, "order" -> 1), "modifiedAt" -> new Date()), false, false)
@@ -274,6 +277,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "color" -> "#00f"
     builder += "createdAt" -> new Date()
     builder += "modifiedAt" -> new Date()
+    builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
     categoriesCollection.update(MongoDBObject("name" -> "fourthCategory"), $set(appKey ->
       MongoDBObject("published" -> true, "order" -> 0), "modifiedAt" -> new Date()), false, false)
