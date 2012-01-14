@@ -270,11 +270,14 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("category", message.get("category").toString) ~
       ("categoryId", message.get("categoryId").toString) ~
       ("text", message.get("text").toString) ~
-      ("createdAt", message.get("createdAt").toString) ~
-      ("modifiedAt", message.get("modifiedAt").toString) ~
+      ("createdAt", message.get("createdAt").asInstanceOf[Date].getTime) ~
+      ("modifiedAt", message.get("modifiedAt").asInstanceOf[Date].getTime) ~
       ("contributorName", message.get("contributorName").toString) ~
-      ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~ ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~ ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
-      ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~ ("value", message.get("rating").asInstanceOf[Double]))
+      ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~
+        ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~
+        ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
+        ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~
+          ("value", message.get("rating").asInstanceOf[Double]))
   }
 
   private def categoryToJSON(o: DBObject) = {
@@ -282,7 +285,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("type", "category") ~
       ("name", o.get("name").toString) ~
       ("color", o.get("color").toString) ~
-      ("lastAddedMessageAt", o.get("lastAddedMessageAt").toString)
+      ("lastAddedMessageAt", o.get("lastAddedMessageAt").asInstanceOf[Date].getTime)
   }
 
 }
