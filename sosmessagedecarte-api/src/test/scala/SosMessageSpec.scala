@@ -55,6 +55,25 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       thirdItem \ "color" must_== JString("#00f")
     }
 
+    "retrieve ordered published categories for the smdt appname" in {
+      val resp = http(host / "api" / "v1" / "categories" <<? Map("appname" -> "smdt") as_str)
+      val json = parse(resp)
+
+      json \ "count" must_== JInt(2)
+
+      val JArray(items) = json \ "items"
+      items.size must_== 2
+
+      val firstItem = items(0)
+      firstItem \ "name" must_== JString("fifthCategory")
+      firstItem \ "color" must_== JString("#0ff")
+
+      val secondItem = items(1)
+      secondItem \ "name" must_== JString("fourthCategory")
+      secondItem \ "color" must_== JString("#00f")
+
+    }
+
     "retrieve only approved messages in firstCategory" in {
       val firstCategory = categoriesCollection.findOne(MongoDBObject("name" -> "firstCategory")).get
       val resp = http(host / "api" / "v1" / "categories" / firstCategory.get("_id").toString / "messages" as_str)
@@ -239,7 +258,8 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
   }
 
   def createCategories() {
-    val appKey = "apps.smdc"
+    val smdcAppKey = "apps.smdc"
+    val smdtAppKey = "apps.smdt"
 
     val date = new Date()
     var builder = MongoDBObject.newBuilder
@@ -249,7 +269,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "modifiedAt" -> date
     builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
-    categoriesCollection.update(MongoDBObject("name" -> "firstCategory"), $set(appKey ->
+    categoriesCollection.update(MongoDBObject("name" -> "firstCategory"), $set(smdcAppKey ->
       MongoDBObject("published" -> true, "order" -> 3), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
@@ -259,7 +279,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "modifiedAt" -> new Date(date.getTime + 10000)
     builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
-    categoriesCollection.update(MongoDBObject("name" -> "secondCategory"), $set(appKey ->
+    categoriesCollection.update(MongoDBObject("name" -> "secondCategory"), $set(smdcAppKey ->
       MongoDBObject("published" -> true, "order" -> 2), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
@@ -269,7 +289,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
     builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
-    categoriesCollection.update(MongoDBObject("name" -> "thirdCategory"), $set(appKey ->
+    categoriesCollection.update(MongoDBObject("name" -> "thirdCategory"), $set(smdcAppKey ->
       MongoDBObject("published" -> false, "order" -> 1), "modifiedAt" -> new Date()), false, false)
 
     builder = MongoDBObject.newBuilder
@@ -279,8 +299,20 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "modifiedAt" -> new Date()
     builder += "lastAddedMessageAt" -> date
     categoriesCollection += builder.result
-    categoriesCollection.update(MongoDBObject("name" -> "fourthCategory"), $set(appKey ->
+    categoriesCollection.update(MongoDBObject("name" -> "fourthCategory"), $set(smdcAppKey ->
       MongoDBObject("published" -> true, "order" -> 0), "modifiedAt" -> new Date()), false, false)
+    categoriesCollection.update(MongoDBObject("name" -> "fourthCategory"), $set(smdtAppKey ->
+      MongoDBObject("published" -> true, "order" -> 0), "modifiedAt" -> new Date()), false, false)
+
+    builder = MongoDBObject.newBuilder
+    builder += "name" -> "fifthCategory"
+    builder += "color" -> "#0ff"
+    builder += "createdAt" -> new Date()
+    builder += "modifiedAt" -> new Date()
+    builder += "lastAddedMessageAt" -> date
+    categoriesCollection += builder.result
+    categoriesCollection.update(MongoDBObject("name" -> "fifthCategory"), $set(smdtAppKey ->
+      MongoDBObject("published" -> true, "order" -> 1), "modifiedAt" -> new Date()), false, false)
   }
 
   def createMessages() {
