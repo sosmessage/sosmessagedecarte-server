@@ -14,11 +14,6 @@ import com.mongodb.casbah._
 import java.util.Date
 import map_reduce.MapReduceStandardOutput
 import org.streum.configrity.Configuration
-import javax.mail._
-import javax.mail.internet._
-import scala.actors.Actor._
-
-case class SendEmail(message: DBObject)
 
 class SosMessage(config: Configuration) extends async.Plan with ServerErrorResponse {
 
@@ -36,51 +31,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
   val random = new Random()
 
-  private val emailSender = actor {
-    loop {
-      react {
-        case SendEmail(message) =>
-          val tls = config[String]("mail.tls", "true")
-          val host = config[String]("mail.host")
-          val port = config[Int]("mail.port")
-          val user = config[String]("mail.user")
-          val password = config[String]("mail.password")
-
-          val props = System.getProperties
-          props.put("mail.smtp.auth", "true");
-          props.put("mail.smtp.starttls.enable", tls);
-          props.put("mail.smtp.host", host);
-          props.put("mail.smtp.user", user);
-          props.put("mail.smtp.password", password);
-          props.put("mail.smtp.port", port.toString);
-          val session = Session.getDefaultInstance(props)
-          val mimeMessage = new MimeMessage(session)
-
-          mimeMessage.setFrom(new InternetAddress(config[String]("mail.from")))
-          mimeMessage.setRecipients(Message.RecipientType.TO, config[String]("mail.recipients"))
-          mimeMessage.setSubject("[Moderation] New message waiting for approval")
-          val text = """
-            Hi,
-
-            There is a new message waiting your approval!
-
-            Category:
-              %s
-
-            Message:
-              %s
-
-            Contributed by %s
-          """.format(message.get("category").toString, message.get("text").toString, message.get("contributorName").toString)
-          mimeMessage.setText(text)
-
-          val transport = session.getTransport("smtp");
-          transport.connect(host, port, user, password);
-          transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-          transport.close();
-      }
-    }
-  }
+  private val emailSender = new EmailSender(config)
 
   val mapJS = """
     function() {
@@ -290,27 +241,3 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
 }
 
-object AppServer {
-
-  def main(args: Array[String]) {
-    val config = getConfig
-    unfiltered.netty.Http(config[Int]("server.port", 3000)).handler(new SosMessage(config)).run
-  }
-
-  def getConfig: Configuration = {
-    val defaultConfig = Configuration("database.host" -> "127.0.0.1",
-      "database.port" -> 27017, "database.name" -> "sosmessage", "server.port" -> 3000)
-
-    val systemConfig = Configuration.systemProperties
-    systemConfig.get[String]("sosmessage.configurationFile") match {
-      case None => defaultConfig
-      case Some(filename) =>
-        try {
-          Configuration.load(filename)
-        } catch {
-          case e: Exception => defaultConfig
-        }
-    }
-  }
-
-}
