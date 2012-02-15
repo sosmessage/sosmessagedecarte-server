@@ -30,6 +30,7 @@ class EmailSender(config: Configuration) extends Actor {
     loop {
       react {
         case SendEmail(message) =>
+          val auth = config[String]("mail.auth", "false")
           val tls = config[String]("mail.tls", "true")
           val host = config[String]("mail.host")
           val port = config[Int]("mail.port")
@@ -37,11 +38,15 @@ class EmailSender(config: Configuration) extends Actor {
           val password = config[String]("mail.password")
 
           val props = System.getProperties
-          props.put("mail.smtp.auth", "true");
+          if (auth == "true") {
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.user", user);
+            props.put("mail.smtp.password", password);
+          } else {
+            props.put("mail.smtp.auth", "false");
+          }
           props.put("mail.smtp.starttls.enable", tls);
           props.put("mail.smtp.host", host);
-          props.put("mail.smtp.user", user);
-          props.put("mail.smtp.password", password);
           props.put("mail.smtp.port", port.toString);
           val session = Session.getDefaultInstance(props)
           val mimeMessage = new MimeMessage(session)
