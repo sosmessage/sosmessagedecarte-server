@@ -213,6 +213,52 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
           req.respond(JsonContent ~> ResponseString(pretty(render(json))))
         }
       }
+
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "best" :: Nil))) =>
+      val Params(form) = req
+      val jsScope = form.get("uid") match {
+        case Some(param) => Some(MongoDBObject("uid" -> param))
+        case None => Some(MongoDBObject("uid" -> ""))
+      }
+      val limit = form.get("limit") match {
+        case Some(param) => param(0).toInt
+        case None => 10
+      }
+
+      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
+      val resultCollectionName = MapReduceMessagesCollectionName + id
+      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+        finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+
+      val order = MongoDBObject("value.rating" -> -1)
+      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
+        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
+      ).reverse
+      val json = ("count", messages.size) ~ ("items", messages)
+      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "worst" :: Nil))) =>
+      val Params(form) = req
+      val jsScope = form.get("uid") match {
+        case Some(param) => Some(MongoDBObject("uid" -> param))
+        case None => Some(MongoDBObject("uid" -> ""))
+      }
+      val limit = form.get("limit") match {
+        case Some(param) => param(0).toInt
+        case None => 10
+      }
+
+      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
+      val resultCollectionName = MapReduceMessagesCollectionName + id
+      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+        finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+
+      val order = MongoDBObject("value.rating" -> 11)
+      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
+        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
+      ).reverse
+      val json = ("count", messages.size) ~ ("items", messages)
+      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
   }
 
   private def messageToJSON(message: DBObject) = {
