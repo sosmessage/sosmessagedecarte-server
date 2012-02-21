@@ -59,13 +59,13 @@ The SosMessage API will be accessible at `http://localhost:3000/api/v1/...`.
 
 You can then launch the server with:
 
-	$ java -jar sosmessage-api_2.9.1-1.2-one-jar.jar
+	$ java -jar sosmessage-api_2.9.1-1.3-SNAPSHOT-one-jar.jar
 
 ### Configuration
 
 To change the default configuration, you can define your own configuration file through a system property:
 
-    $ java -Dsosmessage.configurationFile=conf/sosmessage.conf -jar sosmessage-api_2.9.1-1.2-one-jar.jar
+    $ java -Dsosmessage.configurationFile=conf/sosmessage.conf -jar sosmessage-api_2.9.1-1.3-SNAPSHOT-one-jar.jar
 
 A configuration file looks like (those are the default values):
 
@@ -84,6 +84,6 @@ Logging is done through [Logback](http://logback.qos.ch/).
 
 To override the default configuration, you can use the one in `conf/` by specifying it as a system property:
 
-	$ java -Dlogback.configurationFile=conf/logback.xml -jar sosmessage-api_2.9.1-1.2-one-jar.jar
+	$ java -Dlogback.configurationFile=conf/logback.xml -jar sosmessage-api_2.9.1-1.3-SNAPSHOT-one-jar.jar
 
 See how to configure Logback [here](http://logback.qos.ch/manual/configuration.html).
