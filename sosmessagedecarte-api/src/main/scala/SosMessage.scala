@@ -14,6 +14,7 @@ import com.mongodb.casbah._
 import java.util.Date
 import map_reduce.MapReduceStandardOutput
 import org.streum.configrity.Configuration
+import akka.actor.{ Props, ActorSystem }
 
 class SosMessage(config: Configuration) extends async.Plan with ServerErrorResponse {
 
@@ -31,7 +32,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
 
   val random = new Random()
 
-  private val emailSender = new EmailSender(config)
+  val system = ActorSystem("EmaiSenderSystem")
+  private val emailSender = system.actorOf(Props(new EmailSender(config)), name = "emailSender")
 
   val mapJS = """
     function() {
