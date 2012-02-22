@@ -1,7 +1,9 @@
 package controllers
 
 import play.api._
-import data._
+import play.api.data._
+import play.api.data.Forms._
+import play.api.data.validation.Constraints._
 import play.api.mvc._
 import conf.SosMessageConfiguration
 import com.mongodb.casbah._
@@ -29,16 +31,16 @@ object SosMessageApps extends Controller {
   val appsCollection = mongo(dataBaseName)(AppsCollectionName)
 
   val appForm = Form(
-    of(SosMessageApp.apply _)(
-      "name" -> requiredText,
-      "title" -> requiredText
-    )
+    mapping(
+      "name" -> nonEmptyText,
+      "title" -> nonEmptyText
+    )(SosMessageApp.apply)(SosMessageApp.unapply)
   )
 
   val addCategoryForm = Form(
-    of(NewCategory.apply _)(
-      "id" -> requiredText
-    )
+    mapping(
+      "id" -> nonEmptyText
+    )(NewCategory.apply)(NewCategory.unapply)
   )
 
   def index = Action { implicit request =>

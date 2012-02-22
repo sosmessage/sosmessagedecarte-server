@@ -1,7 +1,9 @@
 package controllers
 
 import play.api._
-import data._
+import play.api.data._
+import play.api.data.Forms._
+import play.api.data.validation.Constraints._
 import play.api.mvc._
 import com.mongodb.casbah.commons.MongoDBObject
 import org.bson.types.ObjectId
@@ -64,12 +66,12 @@ object Messages extends Controller {
   """
 
   val messageForm = Form(
-    of(Message.apply _)(
-      "categoryId" -> requiredText,
-      "text" -> requiredText,
+    mapping(
+      "categoryId" -> nonEmptyText,
+      "text" -> nonEmptyText,
       "contributorName" -> text,
       "approved" -> optional(text)
-    )
+    )(Message.apply)(Message.unapply)
   )
 
   def index(categoryId: Option[String] = None) = Action {

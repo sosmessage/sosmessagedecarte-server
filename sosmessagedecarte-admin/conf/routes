@@ -3,11 +3,11 @@
 # ~~~~
 
 # Home page
-GET       /admin                                          controllers.Application.index()
+GET       /admin                                          controllers.Application.index
 
 # Apps
-GET       /admin/apps                               controllers.SosMessageApps.index()
-POST      /admin/apps                               controllers.SosMessageApps.save()
+GET       /admin/apps                               controllers.SosMessageApps.index
+POST      /admin/apps                               controllers.SosMessageApps.save
 POST      /admin/apps/:id/delete                    controllers.SosMessageApps.delete(id: String)
 GET       /admin/apps/:appId/categories             controllers.SosMessageApps.categories(appId: String)
 POST      /admin/apps/:appId/categories             controllers.SosMessageApps.addCategory(appId: String)
@@ -18,8 +18,8 @@ POST      /admin/apps/:appId/categories/:categoryId/publish           controller
 POST      /admin/apps/:appId/categories/:categoryId/unpublish         controllers.SosMessageApps.unpublishCategory(appId: String, categoryId: String)
 
 # Categories
-GET       /admin/categories                               controllers.Categories.index()
-POST      /admin/categories                               controllers.Categories.save()
+GET       /admin/categories                               controllers.Categories.index
+POST      /admin/categories                               controllers.Categories.save
 POST      /admin/categories/:id/delete                    controllers.Categories.delete(id: String)
 GET       /admin/categories/:categoryId                   controllers.Categories.edit(categoryId: String)
 POST      /admin/categories/:categoryId                   controllers.Categories.update(categoryId: String)

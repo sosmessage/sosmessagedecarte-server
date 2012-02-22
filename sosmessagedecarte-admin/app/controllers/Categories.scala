@@ -1,7 +1,9 @@
 package controllers
 
 import play.api._
-import data._
+import play.api.data._
+import play.api.data.Forms._
+import play.api.data.validation.Constraints._
 import play.api.mvc._
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.MongoConnection
@@ -28,10 +30,10 @@ object Categories extends Controller {
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
 
   val categoryForm = Form(
-    of(Category.apply _)(
-      "name" -> requiredText,
+    mapping(
+      "name" -> nonEmptyText,
       "color" -> text(minLength = 9)
-    )
+    )(Category.apply)(Category.unapply)
   )
 
   def index = Action { implicit request =>
