@@ -9,7 +9,7 @@ seq(com.github.retronym.SbtOneJar.oneJarSettings: _*)
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" % "akka-actor" % "2.0-RC2",
+  "com.typesafe.akka" % "akka-actor" % "2.0",
   "net.databinder" %% "unfiltered-filter" % "0.5.3",
   "net.databinder" %% "unfiltered-netty-server" % "0.5.3",
   "net.databinder" %% "unfiltered-json" % "0.5.3",
