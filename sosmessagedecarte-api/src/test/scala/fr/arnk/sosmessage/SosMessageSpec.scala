@@ -6,7 +6,7 @@ import org.streum.configrity.Configuration
 import com.mongodb.casbah._
 import net.liftweb.json._
 import java.util.Date
-import com.mongodb.{ BasicDBObject, DBObject }
+import com.mongodb.{BasicDBObject, DBObject}
 
 object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
@@ -24,7 +24,9 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
   val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
 
-  def setup = { _.handler(new SosMessage(mockConfig)) }
+  def setup = {
+    _.handler(new SosMessage(mockConfig))
+  }
 
   val http = new Http
 
@@ -112,18 +114,20 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       val firstCategory = categoriesCollection.findOne(MongoDBObject("name" -> "firstCategory")).get
 
       val expectedFirstCategoryMessages = List(JString("First message in first category"), JString("Third message in first category"))
-      (1 until 50).map { index =>
-        val resp = http(host / "api" / "v1" / "categories" / firstCategory.get("_id").toString / "message" as_str)
-        val json = parse(resp)
-        expectedFirstCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
+      (1 until 50).map {
+        index =>
+          val resp = http(host / "api" / "v1" / "categories" / firstCategory.get("_id").toString / "message" as_str)
+          val json = parse(resp)
+          expectedFirstCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
       }
 
       val secondCategory = categoriesCollection.findOne(MongoDBObject("name" -> "secondCategory")).get
       val expectedSecondCategoryMessages = List(JString("First message in second category"), JString("Second message in second category"))
-      (1 until 50).map { index =>
-        val resp = http(host / "api" / "v1" / "categories" / secondCategory.get("_id").toString / "message" as_str)
-        val json = parse(resp)
-        expectedSecondCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
+      (1 until 50).map {
+        index =>
+          val resp = http(host / "api" / "v1" / "categories" / secondCategory.get("_id").toString / "message" as_str)
+          val json = parse(resp)
+          expectedSecondCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
       }
     }
 
