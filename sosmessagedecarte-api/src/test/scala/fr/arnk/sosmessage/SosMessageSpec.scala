@@ -6,7 +6,7 @@ import org.streum.configrity.Configuration
 import com.mongodb.casbah._
 import net.liftweb.json._
 import java.util.Date
-import com.mongodb.{BasicDBObject, DBObject}
+import com.mongodb.{ BasicDBObject, DBObject }
 
 object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
@@ -17,12 +17,14 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
 
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
+  val CommentsCollectionName = "comments"
 
   val dataBaseName = mockConfig[String]("database.name")
 
   val mongo = MongoConnection(mockConfig[String]("database.host", "127.0.0.1"), mockConfig[Int]("database.port", 27017))
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
   val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
+  val commentsCollection = mongo(dataBaseName)(CommentsCollectionName)
 
   def setup = {
     _.handler(new SosMessage(mockConfig))
@@ -251,6 +253,35 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       json \ "vote" \ "minus" must_== JInt(5)
       json \ "vote" \ "userVote" must_== JInt(-1)
     }
+
+    "create comments for the given message" in {
+      val aMessage = messagesCollection.findOne(MongoDBObject("text" -> "First message in first category")).get
+      http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
+        << Map("text" -> "Bender's comment", "author" -> "Bender") >|)
+      http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
+        << Map("text" -> "Leela's comment", "author" -> "Leela") >|)
+
+      val updatedMessage = messagesCollection.findOne(MongoDBObject("text" -> "First message in first category")).get
+      updatedMessage.asInstanceOf[BasicDBObject].getLong("commentsCount") must_== 2
+
+      val resp = http(host / "api" / "v1" / "messages" / updatedMessage.get("_id").toString / "comments" as_str)
+      val json = parse(resp)
+
+      json \ "count" must_== JInt(2)
+
+      val JArray(items) = json \ "items"
+      items.size must_== 2
+
+      val firstItem = items(0)
+      firstItem \ "text" must_== JString("Bender's comment")
+      firstItem \ "author" must_== JString("Bender")
+      firstItem \ "messageId" must_== JString(updatedMessage.get("_id").toString)
+
+      val secondItem = items(1)
+      secondItem \ "text" must_== JString("Leela's comment")
+      secondItem \ "author" must_== JString("Leela")
+      secondItem \ "messageId" must_== JString(updatedMessage.get("_id").toString)
+    }
   }
 
   def initializeDB() {
@@ -331,6 +362,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "First message in first category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 10000)
@@ -343,6 +375,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Second message in first category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "waiting"
     builder += "createdAt" -> new Date(date.getTime + 15000)
     builder += "modifiedAt" -> new Date(date.getTime + 15000)
@@ -354,6 +387,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Third message in first category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -365,6 +399,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "First message in second category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -376,6 +411,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "Second message in second category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -387,6 +423,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> thirdCategory.get("name")
     builder += "text" -> "First message in third category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -398,6 +435,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> fourthCategory.get("name")
     builder += "text" -> "First message in fourth category"
     builder += "contributorName" -> ""
+    builder += "commentsCount" -> 0
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 30000)
     builder += "modifiedAt" -> new Date(date.getTime + 30000)

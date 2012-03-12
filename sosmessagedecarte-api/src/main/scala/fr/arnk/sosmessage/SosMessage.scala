@@ -14,12 +14,13 @@ import com.mongodb.casbah._
 import java.util.Date
 import map_reduce.MapReduceStandardOutput
 import org.streum.configrity.Configuration
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ Props, ActorSystem }
 
 class SosMessage(config: Configuration) extends async.Plan with ServerErrorResponse {
 
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
+  val CommentsCollectionName = "comments"
   val MapReduceMessagesCollectionName = "mapReduceMessages_"
 
   val DefaultSosMessageAppName = "smdc"
@@ -29,6 +30,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
   val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
+  val commentsCollection = mongo(dataBaseName)(CommentsCollectionName)
 
   val random = new Random()
 
@@ -90,7 +92,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
   """
 
   def intent = {
-    case req@GET(Path("/api/v1/categories")) =>
+    case req @ GET(Path("/api/v1/categories")) =>
       val Params(form) = req
       val appName = form.get("appname") match {
         case Some(params) => params(0)
@@ -102,10 +104,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val categories = categoriesCollection.find(q).sort(categoryOrder).foldLeft(List[JValue]())((l, a) =>
         categoryToJSON(a) :: l
       ).reverse
-      val json = ("count", categories.size) ~("items", categories)
+      val json = ("count", categories.size) ~ ("items", categories)
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
 
-    case req@GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
       val Params(form) = req
       val jsScope = form.get("uid") match {
         case Some(param) => Some(MongoDBObject("uid" -> param))
@@ -121,10 +123,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).foldLeft(List[JValue]())((l, a) =>
         messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
       ).reverse
-      val json = ("count", messages.size) ~("items", messages)
+      val json = ("count", messages.size) ~ ("items", messages)
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
 
-    case req@GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "message" :: Nil))) =>
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "message" :: Nil))) =>
       val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
       val count = messagesCollection.find(q, MongoDBObject("_id" -> 1)).count
       val skip = random.nextInt(if (count <= 0) 1 else count)
@@ -149,7 +151,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
         req.respond(NoContent)
       }
 
-    case req@POST(Path(Seg("api" :: "v1" :: "categories" :: categoryId :: "message" :: Nil))) =>
+    case req @ POST(Path(Seg("api" :: "v1" :: "categories" :: categoryId :: "message" :: Nil))) =>
       categoriesCollection.findOne(MongoDBObject("_id" -> new ObjectId(categoryId))) match {
         case Some(category) =>
           val Params(form) = req
@@ -181,7 +183,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
         case None => req.respond(BadRequest)
       }
 
-    case req@POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
+    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
       val Params(form) = req
       if (!form.contains("uid") || !form.contains("rating")) {
         req.respond(BadRequest)
@@ -193,7 +195,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
         req.respond(NoContent)
       }
 
-    case req@POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "vote" :: Nil))) =>
+    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "vote" :: Nil))) =>
       val Params(form) = req
       if (!form.contains("uid") || !form.contains("vote")) {
         req.respond(BadRequest)
@@ -216,7 +218,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
         }
       }
 
-    case req@GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "best" :: Nil))) =>
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "best" :: Nil))) =>
       val Params(form) = req
       val jsScope = form.get("uid") match {
         case Some(param) => Some(MongoDBObject("uid" -> param))
@@ -236,10 +238,10 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
         messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
       ).reverse
-      val json = ("count", messages.size) ~("items", messages)
+      val json = ("count", messages.size) ~ ("items", messages)
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
 
-    case req@GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "worst" :: Nil))) =>
+    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "worst" :: Nil))) =>
       val Params(form) = req
       val jsScope = form.get("uid") match {
         case Some(param) => Some(MongoDBObject("uid" -> param))
@@ -259,8 +261,57 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
         messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
       ).reverse
-      val json = ("count", messages.size) ~("items", messages)
+      val json = ("count", messages.size) ~ ("items", messages)
       req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+
+    case req @ GET(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "comments" :: Nil))) =>
+      val Params(form) = req
+      val offset = form.get("offset") match {
+        case Some(param) => param(0).toInt
+        case None => 0
+      }
+      val limit = form.get("limit") match {
+        case Some(param) => param(0).toInt
+        case None => 10
+      }
+
+      val q = MongoDBObject("messageId" -> new ObjectId(messageId))
+      val order = MongoDBObject("createdAt" -> 1)
+      val comments = commentsCollection.find(q).sort(order).skip(offset).limit(limit).foldLeft(List[JValue]())((l, a) =>
+        commentToJSON(a) :: l
+      ).reverse
+
+      val json = ("count", comments.size) ~ ("items", comments)
+      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+
+    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "comments" :: Nil))) =>
+      val oid = new ObjectId(messageId)
+      messagesCollection.findOne(MongoDBObject("_id" -> oid)) match {
+        case Some(message) =>
+          val Params(form) = req
+          form.get("text") match {
+            case Some(textParam) =>
+              val builder = MongoDBObject.newBuilder
+              builder += "messageId" -> message.get("_id")
+              builder += "text" -> textParam(0)
+              form.get("author") match {
+                case Some(param) =>
+                  builder += "author" -> param(0)
+                case None =>
+                  builder += "author" -> ""
+              }
+              builder += "createdAt" -> new Date()
+              val result = builder.result
+              commentsCollection += result
+
+              messagesCollection.update(MongoDBObject("_id" -> oid), $inc("commentsCount" -> 1), false, false)
+
+              req.respond(NoContent)
+
+            case None => req.respond(BadRequest)
+          }
+        case None => req.respond(BadRequest)
+      }
   }
 
   private def messageToJSON(message: DBObject) = {
@@ -272,11 +323,12 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("createdAt", message.get("createdAt").asInstanceOf[Date].getTime) ~
       ("modifiedAt", message.get("modifiedAt").asInstanceOf[Date].getTime) ~
       ("contributorName", message.get("contributorName").toString) ~
+      ("commentsCount", message.get("commentsCount").asInstanceOf[Int]) ~
       ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~
         ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~
         ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
-      ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~
-        ("value", message.get("rating").asInstanceOf[Double]))
+        ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~
+          ("value", message.get("rating").asInstanceOf[Double]))
   }
 
   private def categoryToJSON(o: DBObject) = {
@@ -285,6 +337,15 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("name", o.get("name").toString) ~
       ("color", o.get("color").toString) ~
       ("lastAddedMessageAt", o.get("lastAddedMessageAt").asInstanceOf[Date].getTime)
+  }
+
+  private def commentToJSON(o: DBObject) = {
+    ("id", o.get("_id").toString) ~
+      ("type", "comment") ~
+      ("messageId", o.get("messageId").toString) ~
+      ("text", o.get("text").toString) ~
+      ("author", o.get("author").toString) ~
+      ("createdAt", o.get("createdAt").asInstanceOf[Date].getTime)
   }
 
 }
