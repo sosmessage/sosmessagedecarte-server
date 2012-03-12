@@ -328,7 +328,7 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("createdAt", message.get("createdAt").asInstanceOf[Date].getTime) ~
       ("modifiedAt", message.get("modifiedAt").asInstanceOf[Date].getTime) ~
       ("contributorName", message.get("contributorName").toString) ~
-      ("commentsCount", message.get("commentsCount").asInstanceOf[Int]) ~
+      ("commentsCount", message.get("commentsCount").asInstanceOf[Long]) ~
       ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~
         ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~
         ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
