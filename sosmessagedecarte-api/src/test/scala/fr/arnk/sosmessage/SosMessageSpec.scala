@@ -257,9 +257,9 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     "create comments for the given message" in {
       val aMessage = messagesCollection.findOne(MongoDBObject("text" -> "First message in first category")).get
       http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
-        << Map("text" -> "Bender's comment", "author" -> "Bender") >|)
+        << Map("text" -> "Bender's comment", "author" -> "Bender", "uid" -> "android1") >|)
       http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
-        << Map("text" -> "Leela's comment", "author" -> "Leela") >|)
+        << Map("text" -> "Leela's comment", "author" -> "Leela", "uid" -> "iphone1") >|)
 
       val updatedMessage = messagesCollection.findOne(MongoDBObject("text" -> "First message in first category")).get
       updatedMessage.asInstanceOf[BasicDBObject].getLong("commentsCount") must_== 2
@@ -276,11 +276,13 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
       firstItem \ "text" must_== JString("Bender's comment")
       firstItem \ "author" must_== JString("Bender")
       firstItem \ "messageId" must_== JString(updatedMessage.get("_id").toString)
+      firstItem \ "uid" must_== JString("android1")
 
       val secondItem = items(1)
       secondItem \ "text" must_== JString("Leela's comment")
       secondItem \ "author" must_== JString("Leela")
       secondItem \ "messageId" must_== JString(updatedMessage.get("_id").toString)
+      secondItem \ "uid" must_== JString("iphone1")
     }
   }
 

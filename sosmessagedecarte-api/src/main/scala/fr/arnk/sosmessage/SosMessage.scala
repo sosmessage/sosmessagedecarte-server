@@ -289,26 +289,31 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       messagesCollection.findOne(MongoDBObject("_id" -> oid)) match {
         case Some(message) =>
           val Params(form) = req
-          form.get("text") match {
-            case Some(textParam) =>
-              val builder = MongoDBObject.newBuilder
-              builder += "messageId" -> message.get("_id")
-              builder += "text" -> textParam(0)
-              form.get("author") match {
-                case Some(param) =>
-                  builder += "author" -> param(0)
-                case None =>
-                  builder += "author" -> ""
-              }
-              builder += "createdAt" -> new Date()
-              val result = builder.result
-              commentsCollection += result
+          if (!form.contains("uid")) {
+            req.respond(BadRequest)
+          } else {
+            form.get("text") match {
+              case Some(textParam) =>
+                val builder = MongoDBObject.newBuilder
+                builder += "messageId" -> message.get("_id")
+                builder += "text" -> textParam(0)
+                form.get("author") match {
+                  case Some(param) =>
+                    builder += "author" -> param(0)
+                  case None =>
+                    builder += "author" -> ""
+                }
+                builder += "createdAt" -> new Date()
+                builder += "uid" -> form.get("uid").get(0)
+                val result = builder.result
+                commentsCollection += result
 
-              messagesCollection.update(MongoDBObject("_id" -> oid), $inc("commentsCount" -> 1), false, false)
+                messagesCollection.update(MongoDBObject("_id" -> oid), $inc("commentsCount" -> 1), false, false)
 
-              req.respond(NoContent)
+                req.respond(NoContent)
 
-            case None => req.respond(BadRequest)
+              case None => req.respond(BadRequest)
+            }
           }
         case None => req.respond(BadRequest)
       }
@@ -345,7 +350,8 @@ class SosMessage(config: Configuration) extends async.Plan with ServerErrorRespo
       ("messageId", o.get("messageId").toString) ~
       ("text", o.get("text").toString) ~
       ("author", o.get("author").toString) ~
-      ("createdAt", o.get("createdAt").asInstanceOf[Date].getTime)
+      ("createdAt", o.get("createdAt").asInstanceOf[Date].getTime) ~
+      ("uid", o.get("uid").toString)
   }
 
 }
