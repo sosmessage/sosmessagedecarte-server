@@ -364,7 +364,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "First message in first category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 10000)
@@ -377,7 +377,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Second message in first category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "waiting"
     builder += "createdAt" -> new Date(date.getTime + 15000)
     builder += "modifiedAt" -> new Date(date.getTime + 15000)
@@ -389,7 +389,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> firstCategory.get("name")
     builder += "text" -> "Third message in first category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -401,7 +401,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "First message in second category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -413,7 +413,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> secondCategory.get("name")
     builder += "text" -> "Second message in second category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -425,7 +425,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> thirdCategory.get("name")
     builder += "text" -> "First message in third category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 20000)
     builder += "modifiedAt" -> new Date(date.getTime + 20000)
@@ -437,7 +437,7 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     builder += "category" -> fourthCategory.get("name")
     builder += "text" -> "First message in fourth category"
     builder += "contributorName" -> ""
-    builder += "commentsCount" -> 0
+    builder += "commentsCount" -> 0L
     builder += "state" -> "approved"
     builder += "createdAt" -> new Date(date.getTime + 30000)
     builder += "modifiedAt" -> new Date(date.getTime + 30000)
