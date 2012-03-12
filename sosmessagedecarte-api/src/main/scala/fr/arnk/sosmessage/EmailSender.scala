@@ -2,8 +2,8 @@ package fr.arnk.sosmessage
 
 import akka.actor._
 import com.mongodb.DBObject
-import javax.mail.internet.{InternetAddress, MimeMessage}
-import javax.mail.{Message, Session}
+import javax.mail.internet.{ InternetAddress, MimeMessage }
+import javax.mail.{ Message, Session }
 import org.streum.configrity.Configuration
 
 case class SendEmail(message: DBObject)
