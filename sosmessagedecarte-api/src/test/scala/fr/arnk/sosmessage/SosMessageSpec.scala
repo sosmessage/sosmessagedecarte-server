@@ -30,8 +30,6 @@ object SosMessageSpec extends Specification with unfiltered.spec.netty.Served {
     _.handler(new SosMessage(mockConfig))
   }
 
-  val http = new Http
-
   "The SosMessage app" should {
     doBefore {
       initializeDB()
