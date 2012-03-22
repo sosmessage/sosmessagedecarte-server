@@ -8,7 +8,7 @@ import org.streum.configrity.Configuration
 
 case class SendEmail(message: DBObject)
 
-class EmailSender(config: Configuration) extends Actor {
+class EmailSender extends Actor {
 
   private val Subject = "[Moderation] New message waiting for approval"
 
@@ -28,12 +28,12 @@ class EmailSender(config: Configuration) extends Actor {
 
   def receive = {
     case SendEmail(message) =>
-      val auth = config[String]("mail.auth", "false")
-      val tls = config[String]("mail.tls", "true")
-      val host = config[String]("mail.host")
-      val port = config[Int]("mail.port")
-      val user = config[String]("mail.user")
-      val password = config[String]("mail.password")
+      val auth = SosMessageConfig[String]("mail.auth").getOrElse("false")
+      val tls = SosMessageConfig[String]("mail.tls").getOrElse("true")
+      val host = SosMessageConfig[String]("mail.host").get
+      val port = SosMessageConfig[Int]("mail.port").get
+      val user = SosMessageConfig[String]("mail.user").get
+      val password = SosMessageConfig[String]("mail.password").get
 
       val props = System.getProperties
       if (auth == "true") {
@@ -49,8 +49,8 @@ class EmailSender(config: Configuration) extends Actor {
       val session = Session.getDefaultInstance(props)
       val mimeMessage = new MimeMessage(session)
 
-      mimeMessage.setFrom(new InternetAddress(config[String]("mail.from")))
-      mimeMessage.setRecipients(Message.RecipientType.TO, config[String]("mail.recipients"))
+      mimeMessage.setFrom(new InternetAddress(SosMessageConfig[String]("mail.from").get))
+      mimeMessage.setRecipients(Message.RecipientType.TO, SosMessageConfig[String]("mail.recipients").get)
       mimeMessage.setSubject(Subject)
       val text = Text.format(message.get("category").toString, message.get("text").toString, message.get("contributorName").toString)
       mimeMessage.setText(text)

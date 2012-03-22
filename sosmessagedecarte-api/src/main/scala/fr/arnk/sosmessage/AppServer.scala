@@ -1,28 +1,21 @@
 package fr.arnk.sosmessage
 
-import org.streum.configrity.Configuration
+import unfiltered._
 
 object AppServer {
 
   def main(args: Array[String]) {
-    val config = getConfig
-    unfiltered.netty.Http(config[Int]("server.port", 3000)).handler(new SosMessage(config)).run
-  }
 
-  def getConfig: Configuration = {
-    val defaultConfig = Configuration("database.host" -> "127.0.0.1",
-      "database.port" -> 27017, "database.name" -> "sosmessage", "server.port" -> 3000)
-
-    val systemConfig = Configuration.systemProperties
-    systemConfig.get[String]("sosmessage.configurationFile") match {
-      case None => defaultConfig
-      case Some(filename) =>
-        try {
-          Configuration.load(filename)
-        } catch {
-          case e: Exception => defaultConfig
-        }
-    }
+    netty.Http(SosMessageConfig.get[Int]("server.port").getOrElse(3000))
+      .handler(netty.cycle.Planify {
+        SosMessageApi.publishedCategories orElse
+          SosMessageApi.messages orElse SosMessageApi.randomMessage orElse
+          SosMessageApi.bestMessages orElse SosMessageApi.worstMessages orElse
+          SosMessageApi.postMessage orElse SosMessageApi.rateMessage orElse SosMessageApi.voteMessage orElse
+          SosMessageApi.commentsForMessage orElse SosMessageApi.postComment orElse
+          SosMessageApi.publishedAnnouncements
+      })
+      .run()
   }
 
 }

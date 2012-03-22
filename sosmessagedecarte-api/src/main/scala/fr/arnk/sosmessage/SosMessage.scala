@@ -1,358 +1,263 @@
 package fr.arnk.sosmessage
 
-import scala.util.Random
-
-import unfiltered.request._
-import unfiltered.response._
-import unfiltered.netty._
+import util.Random
+import akka.actor.{ Props, ActorSystem }
+import com.mongodb.casbah._
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonDSL._
-import net.liftweb.json.Printer._
-import com.mongodb.casbah.commons.MongoDBObject
-import org.bson.types.ObjectId
-import com.mongodb.casbah._
-import java.util.Date
+import com.mongodb.DBObject
 import map_reduce.MapReduceStandardOutput
-import org.streum.configrity.Configuration
-import akka.actor.{ Props, ActorSystem }
+import java.util.Date
+import org.bson.types.ObjectId
+import unfiltered.request.Params
+import unfiltered.response.NoContent
+import MapReduce._
 
-class SosMessage(config: Configuration) extends async.Plan with ServerErrorResponse {
+case class Category(dbObject: DBObject)
+case class Message(dbObject: DBObject)
+case class Comment(dbObject: DBObject)
+case class Announcement(dbObject: DBObject)
+
+object SosMessage {
 
   val MessagesCollectionName = "messages"
   val CategoriesCollectionName = "categories"
   val CommentsCollectionName = "comments"
-  val MapReduceMessagesCollectionName = "mapReduceMessages_"
+  val AnnouncementsCollectionName = "announcements"
 
   val DefaultSosMessageAppName = "smdc"
-
-  val dataBaseName = config[String]("database.name", "sosmessage")
-
-  val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
-  val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
-  val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
-  val commentsCollection = mongo(dataBaseName)(CommentsCollectionName)
 
   val random = new Random()
 
   val system = ActorSystem("EmaiSenderSystem")
-  private val emailSender = system.actorOf(Props(new EmailSender(config)), name = "emailSender")
+  private val emailSender = system.actorOf(Props(new EmailSender), name = "emailSender")
 
-  val mapJS = """
-    function() {
-      emit(this._id, this);
-    }
-  """
-
-  val reduceJS = """
-    function(key, values) {
-    }
-  """
-
-  val finalizeJS = """
-    function(key, value) {
-      var count = 0;
-      var total = 0;
-      var votePlus = 0;
-      var voteMinus = 0;
-      var userVote = 0;
-      for (var prop in value.ratings) {
-        var rating = value.ratings[prop];
-        var vote = rating == 1 ? -1 : 1
-        if (prop == uid) {
-          userVote = vote
+  // Categories
+  def categoryExists(categoryId: String): Boolean = {
+    DB.collection(CategoriesCollectionName) {
+      c =>
+        c.findOne(MongoDBObject("_id" -> new ObjectId(categoryId))) match {
+          case Some(o) => true
+          case None => false
         }
-
-        if (vote == 1) {
-          votePlus++;
-        } else {
-          voteMinus++;
-        }
-
-        count++;
-        total += value.ratings[prop];
-      }
-
-      value.votePlus = votePlus;
-      value.voteMinus = voteMinus;
-      value.userVote = userVote;
-
-      if (total == 0 || count == 0) {
-        avg = 0;
-      } else {
-        avg = total / count;
-      }
-
-      value.ratingCount = count;
-      value.rating = avg;
-
-      delete value.ratings;
-
-      return value;
     }
-  """
+  }
 
-  def intent = {
-    case req @ GET(Path("/api/v1/categories")) =>
-      val Params(form) = req
-      val appName = form.get("appname") match {
-        case Some(params) => params(0)
-        case None => DefaultSosMessageAppName
-      }
+  def publishedCategories(appName: Option[String]): Seq[Category] = {
+    val applicationName = appName match {
+      case Some(name) => name
+      case None => DefaultSosMessageAppName
+    }
 
-      val categoryOrder = MongoDBObject("apps." + appName + ".order" -> -1)
-      val q = MongoDBObject("apps." + appName + ".published" -> true)
-      val categories = categoriesCollection.find(q).sort(categoryOrder).foldLeft(List[JValue]())((l, a) =>
-        categoryToJSON(a) :: l
-      ).reverse
-      val json = ("count", categories.size) ~ ("items", categories)
-      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+    val categoryOrder = MongoDBObject("apps." + applicationName + ".order" -> -1)
+    val q = MongoDBObject("apps." + applicationName + ".published" -> true)
+    DB.collection(CategoriesCollectionName) {
+      c =>
+        c.find(q).sort(categoryOrder).toSeq.map(category => Category(category))
+    }
+  }
 
-    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "messages" :: Nil))) =>
-      val Params(form) = req
-      val jsScope = form.get("uid") match {
-        case Some(param) => Some(MongoDBObject("uid" -> param))
-        case None => Some(MongoDBObject("uid" -> ""))
-      }
-
-      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val resultCollectionName = MapReduceMessagesCollectionName + id
-      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
-        finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
-
-      val order = MongoDBObject("value.createdAt" -> -1)
-      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).foldLeft(List[JValue]())((l, a) =>
-        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
-      ).reverse
-      val json = ("count", messages.size) ~ ("items", messages)
-      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
-
-    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "message" :: Nil))) =>
-      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val count = messagesCollection.find(q, MongoDBObject("_id" -> 1)).count
-      val skip = random.nextInt(if (count <= 0) 1 else count)
-
-      val keys = MongoDBObject("_id" -> 1)
-      val messages = messagesCollection.find(q, keys).limit(-1).skip(skip)
-      if (!messages.isEmpty) {
-        val message = messages.next()
-
-        val Params(form) = req
-        val jsScope = form.get("uid") match {
-          case Some(param) => Some(MongoDBObject("uid" -> param))
-          case None => Some(MongoDBObject("uid" -> ""))
+  // Messages
+  def messageExists(messageId: String): Boolean = {
+    DB.collection(MessagesCollectionName) {
+      c =>
+        c.findOne(MongoDBObject("_id" -> new ObjectId(messageId))) match {
+          case Some(o) => true
+          case None => false
         }
+    }
+  }
 
-        val q = MongoDBObject("_id" -> message.get("_id"))
-        val res = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
-          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope).next()
-        val json = messageToJSON(res.get("value").asInstanceOf[DBObject])
-        req.respond(JsonContent ~> ResponseString(pretty(render(json))))
-      } else {
-        req.respond(NoContent)
-      }
+  def randomMessage(categoryId: String, uid: Option[String]): Option[Message] = {
+    import MapReduce._
+    DB.collection(MessagesCollectionName) {
+      c =>
+        val q = MongoDBObject("categoryId" -> new ObjectId(categoryId), "state" -> "approved")
+        val count = c.find(q, MongoDBObject("_id" -> 1)).count
+        val skip = random.nextInt(if (count <= 0) 1 else count)
 
-    case req @ POST(Path(Seg("api" :: "v1" :: "categories" :: categoryId :: "message" :: Nil))) =>
-      categoriesCollection.findOne(MongoDBObject("_id" -> new ObjectId(categoryId))) match {
-        case Some(category) =>
-          val Params(form) = req
-          form.get("text") match {
-            case Some(textParam) =>
-              val builder = MongoDBObject.newBuilder
-              builder += "categoryId" -> category.get("_id")
-              builder += "category" -> category.get("name")
-              builder += "text" -> textParam(0)
-              form.get("contributorName") match {
-                case Some(param) =>
-                  builder += "contributorName" -> param(0)
-                case None =>
-                  builder += "contributorName" -> ""
-              }
-              builder += "state" -> "waiting"
-              builder += "createdAt" -> new Date()
-              builder += "modifiedAt" -> new Date()
-              builder += "random" -> scala.math.random
-              val result = builder.result
-              messagesCollection += result
+        val keys = MongoDBObject("_id" -> 1)
+        val messages = c.find(q, keys).limit(-1).skip(skip)
+        if (!messages.isEmpty) {
+          val message = messages.next()
 
-              emailSender ! SendEmail(result)
-
-              req.respond(NoContent)
-
-            case None => req.respond(BadRequest)
+          val jsScope = uid match {
+            case Some(u) => Some(MongoDBObject("uid" -> u))
+            case None => Some(MongoDBObject("uid" -> ""))
           }
-        case None => req.respond(BadRequest)
-      }
 
-    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "rate" :: Nil))) =>
-      val Params(form) = req
-      if (!form.contains("uid") || !form.contains("rating")) {
-        req.respond(BadRequest)
-      } else {
-        val uid = form("uid")(0)
-        val rating = if (form("rating")(0).toInt > 5) 5 else form("rating")(0).toInt
-        val key = "ratings." + uid.replaceAll("\\.", "-")
-        messagesCollection.update(MongoDBObject("_id" -> new ObjectId(messageId)), $set(key -> rating), false, false)
-        req.respond(NoContent)
-      }
-
-    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "vote" :: Nil))) =>
-      val Params(form) = req
-      if (!form.contains("uid") || !form.contains("vote")) {
-        req.respond(BadRequest)
-      } else {
-        val uid = form("uid")(0)
-        val vote = form("vote")(0).toInt
-        if (vote != 1 && vote != -1) {
-          req.respond(BadRequest)
-        } else {
-          val rating = if (vote == 1) 5 else 1
-          val key = "ratings." + uid.replaceAll("\\.", "-")
-          val q = MongoDBObject("_id" -> new ObjectId(messageId))
-          messagesCollection.update(q, $set(key -> rating), false, false)
-
-          val jsScope = Some(MongoDBObject("uid" -> uid))
-          val res = messagesCollection.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
+          val q = MongoDBObject("_id" -> message.get("_id"))
+          val res = c.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
             finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope).next()
-          val json = messageToJSON(res.get("value").asInstanceOf[DBObject])
-          req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+
+          val json = Message(res.get("value").asInstanceOf[DBObject])
+          Some(json)
+        } else {
+          None
         }
-      }
+    }
+  }
 
-    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "best" :: Nil))) =>
-      val Params(form) = req
-      val jsScope = form.get("uid") match {
-        case Some(param) => Some(MongoDBObject("uid" -> param))
-        case None => Some(MongoDBObject("uid" -> ""))
-      }
-      val limit = form.get("limit") match {
-        case Some(param) => param(0).toInt
-        case None => 10
-      }
+  def messages(categoryId: String, uid: Option[String]): Seq[Message] = {
+    val jsScope = uid match {
+      case Some(u) => Some(MongoDBObject("uid" -> u))
+      case None => Some(MongoDBObject("uid" -> ""))
+    }
 
-      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val resultCollectionName = MapReduceMessagesCollectionName + id
-      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
-        finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+    val q = MongoDBObject("categoryId" -> new ObjectId(categoryId), "state" -> "approved")
+    val resultCollectionName = MapReduce.MapReduceMessagesCollectionName + categoryId
+    DB.collection(MessagesCollectionName) {
+      c =>
+        c.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+    }
 
-      val order = MongoDBObject("value.rating" -> -1)
-      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
-        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
-      ).reverse
-      val json = ("count", messages.size) ~ ("items", messages)
-      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+    val order = MongoDBObject("value.createdAt" -> -1)
+    DB.collection(resultCollectionName) {
+      c =>
+        c.find().sort(order).toSeq.map(message =>
+          Message(message.get("value").asInstanceOf[DBObject])
+        )
+    }
+  }
 
-    case req @ GET(Path(Seg("api" :: "v1" :: "categories" :: id :: "worst" :: Nil))) =>
-      val Params(form) = req
-      val jsScope = form.get("uid") match {
-        case Some(param) => Some(MongoDBObject("uid" -> param))
-        case None => Some(MongoDBObject("uid" -> ""))
-      }
-      val limit = form.get("limit") match {
-        case Some(param) => param(0).toInt
-        case None => 10
-      }
+  def bestMessages(categoryId: String, uid: Option[String], limit: Option[Int]): Seq[Message] = {
+    val jsScope = uid match {
+      case Some(u) => Some(MongoDBObject("uid" -> u))
+      case None => Some(MongoDBObject("uid" -> ""))
+    }
 
-      val q = MongoDBObject("categoryId" -> new ObjectId(id), "state" -> "approved")
-      val resultCollectionName = MapReduceMessagesCollectionName + id
-      messagesCollection.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
-        finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+    val q = MongoDBObject("categoryId" -> new ObjectId(categoryId), "state" -> "approved")
+    val resultCollectionName = MapReduceMessagesCollectionName + categoryId
+    DB.collection(MessagesCollectionName) {
+      c =>
+        c.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+    }
 
-      val order = MongoDBObject("value.rating" -> 11)
-      val messages = mongo(dataBaseName)(resultCollectionName).find().sort(order).limit(limit).foldLeft(List[JValue]())((l, a) =>
-        messageToJSON(a.get("value").asInstanceOf[DBObject]) :: l
-      ).reverse
-      val json = ("count", messages.size) ~ ("items", messages)
-      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+    val order = MongoDBObject("value.rating" -> 1)
+    DB.collection(resultCollectionName) {
+      c =>
+        c.find().sort(order).limit(limit.getOrElse(10)).toSeq.map(message =>
+          Message(message.get("value").asInstanceOf[DBObject])
+        )
+    }
+  }
 
-    case req @ GET(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "comments" :: Nil))) =>
-      val Params(form) = req
-      val offset = form.get("offset") match {
-        case Some(param) => param(0).toInt
-        case None => 0
-      }
-      val limit = form.get("limit") match {
-        case Some(param) => param(0).toInt
-        case None => 10
-      }
+  def worstMessages(categoryId: String, uid: Option[String], limit: Option[Int]): Seq[Message] = {
+    val jsScope = uid match {
+      case Some(u) => Some(MongoDBObject("uid" -> u))
+      case None => Some(MongoDBObject("uid" -> ""))
+    }
 
-      val q = MongoDBObject("messageId" -> new ObjectId(messageId))
-      val order = MongoDBObject("createdAt" -> 1)
-      val comments = commentsCollection.find(q).sort(order).skip(offset).limit(limit).foldLeft(List[JValue]())((l, a) =>
-        commentToJSON(a) :: l
-      ).reverse
+    val q = MongoDBObject("categoryId" -> new ObjectId(categoryId), "state" -> "approved")
+    val resultCollectionName = MapReduceMessagesCollectionName + categoryId
+    DB.collection(MessagesCollectionName) {
+      c =>
+        c.mapReduce(mapJS, reduceJS, MapReduceStandardOutput(resultCollectionName),
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope)
+    }
 
-      val json = ("count", comments.size) ~ ("items", comments)
-      req.respond(JsonContent ~> ResponseString(pretty(render(json))))
+    val order = MongoDBObject("value.rating" -> -1)
+    DB.collection(resultCollectionName) {
+      c =>
+        c.find().sort(order).limit(limit.getOrElse(10)).toSeq.map(message =>
+          Message(message.get("value").asInstanceOf[DBObject])
+        )
+    }
+  }
 
-    case req @ POST(Path(Seg("api" :: "v1" :: "messages" :: messageId :: "comments" :: Nil))) =>
-      val oid = new ObjectId(messageId)
-      messagesCollection.findOne(MongoDBObject("_id" -> oid)) match {
-        case Some(message) =>
-          val Params(form) = req
-          if (!form.contains("uid")) {
-            req.respond(BadRequest)
-          } else {
-            form.get("text") match {
-              case Some(textParam) =>
-                val builder = MongoDBObject.newBuilder
-                builder += "messageId" -> message.get("_id")
-                builder += "text" -> textParam(0)
-                form.get("author") match {
-                  case Some(param) =>
-                    builder += "author" -> param(0)
-                  case None =>
-                    builder += "author" -> ""
-                }
-                builder += "createdAt" -> new Date()
-                builder += "uid" -> form.get("uid").get(0)
-                val result = builder.result
-                commentsCollection += result
-
-                messagesCollection.update(MongoDBObject("_id" -> oid), $inc("commentsCount" -> 1), false, false)
-
-                req.respond(NoContent)
-
-              case None => req.respond(BadRequest)
+  def addMessage(categoryId: String, text: String, contributorName: Option[String]) {
+    DB.collection(CategoriesCollectionName) {
+      c =>
+        c.findOne(MongoDBObject("_id" -> new ObjectId(categoryId))) map {
+          category =>
+            val builder = MongoDBObject.newBuilder
+            builder += "categoryId" -> category.get("_id")
+            builder += "category" -> category.get("name")
+            builder += "text" -> text
+            contributorName match {
+              case Some(param) =>
+                builder += "contributorName" -> param
+              case None =>
+                builder += "contributorName" -> ""
             }
-          }
-        case None => req.respond(BadRequest)
-      }
+            builder += "state" -> "waiting"
+            builder += "createdAt" -> new Date()
+            builder += "modifiedAt" -> new Date()
+            builder += "random" -> scala.math.random
+            val result = builder.result
+
+            DB.collection(MessagesCollectionName) {
+              c =>
+                c += result
+                emailSender ! SendEmail(result)
+            }
+        }
+    }
   }
 
-  private def messageToJSON(message: DBObject) = {
-    ("id", message.get("_id").toString) ~
-      ("type", "message") ~
-      ("category", message.get("category").toString) ~
-      ("categoryId", message.get("categoryId").toString) ~
-      ("text", message.get("text").toString) ~
-      ("createdAt", message.get("createdAt").asInstanceOf[Date].getTime) ~
-      ("modifiedAt", message.get("modifiedAt").asInstanceOf[Date].getTime) ~
-      ("contributorName", message.get("contributorName").toString) ~
-      ("commentsCount", message.get("commentsCount").asInstanceOf[Long]) ~
-      ("vote", ("plus", message.get("votePlus").asInstanceOf[Double].toLong) ~
-        ("minus", message.get("voteMinus").asInstanceOf[Double].toLong) ~
-        ("userVote", message.get("userVote").asInstanceOf[Double].toLong)) ~
-        ("rating", ("count", message.get("ratingCount").asInstanceOf[Double].toLong) ~
-          ("value", message.get("rating").asInstanceOf[Double]))
+  // Rating
+  def rateMessage(messageId: String, uid: String, rating: Int): Message = {
+    val key = "ratings." + uid.replaceAll("\\.", "-")
+    DB.collection(MessagesCollectionName) {
+      c =>
+        val q = MongoDBObject("_id" -> new ObjectId(messageId))
+        c.update(q, $set(key -> rating), false, false)
+
+        val jsScope = Some(MongoDBObject("uid" -> uid))
+        val res = c.mapReduce(mapJS, reduceJS, MapReduceInlineOutput,
+          finalizeFunction = Some(finalizeJS), query = Some(q), jsScope = jsScope).next()
+        Message(res.get("value").asInstanceOf[DBObject])
+    }
   }
 
-  private def categoryToJSON(o: DBObject) = {
-    ("id", o.get("_id").toString) ~
-      ("type", "category") ~
-      ("name", o.get("name").toString) ~
-      ("color", o.get("color").toString) ~
-      ("lastAddedMessageAt", o.get("lastAddedMessageAt").asInstanceOf[Date].getTime)
+  // Comments
+  def comments(messageId: String, offset: Option[Int] = Some(0), limit: Option[Int] = Some(10)): Seq[Comment] = {
+    val q = MongoDBObject("messageId" -> new ObjectId(messageId))
+    val order = MongoDBObject("createdAt" -> 1)
+    DB.collection(CommentsCollectionName) {
+      c =>
+        c.find(q).sort(order).skip(offset.getOrElse(0)).limit(limit.getOrElse(10))
+          .toSeq.map(comment => Comment(comment))
+    }
   }
 
-  private def commentToJSON(o: DBObject) = {
-    ("id", o.get("_id").toString) ~
-      ("type", "comment") ~
-      ("messageId", o.get("messageId").toString) ~
-      ("text", o.get("text").toString) ~
-      ("author", o.get("author").toString) ~
-      ("createdAt", o.get("createdAt").asInstanceOf[Date].getTime) ~
-      ("uid", o.get("uid").toString)
+  def addComment(messageId: String, uid: String, text: String, author: Option[String] = None): Comment = {
+    val oid = new ObjectId(messageId)
+    val builder = MongoDBObject.newBuilder
+    builder += "messageId" -> oid
+    builder += "text" -> text
+    author.map({
+      a =>
+        builder += "author" -> a
+    })
+    builder += "createdAt" -> new Date()
+    builder += "uid" -> uid
+    val result = builder.result
+    DB.collection(CommentsCollectionName) {
+      c =>
+        c += result
+    }
+    DB.collection(MessagesCollectionName) {
+      c =>
+        c.update(MongoDBObject("_id" -> oid), $inc("commentsCount" -> 1), false, false)
+    }
+    Comment(result)
+  }
+
+  // Announcements
+  def publishedAnnouncements(appName: Option[String]): Seq[Announcement] = {
+    val applicationName = appName match {
+      case Some(name) => name
+      case None => DefaultSosMessageAppName
+    }
+
+    val q = MongoDBObject("apps." + applicationName + ".published" -> true)
+    DB.collection(AnnouncementsCollectionName) {
+      c =>
+        c.find(q).toSeq.map(announcement => Announcement(announcement))
+    }
   }
 
 }
-
