@@ -13,24 +13,26 @@ import unfiltered.request.Params
 import unfiltered.response.NoContent
 import MapReduce._
 
+object SosMessageCollections {
+  val MessagesCollectionName = "messages"
+  val CategoriesCollectionName = "categories"
+  val CommentsCollectionName = "comments"
+  val AnnouncementsCollectionName = "announcements"
+}
+
 case class Category(dbObject: DBObject)
 case class Message(dbObject: DBObject)
 case class Comment(dbObject: DBObject)
 case class Announcement(dbObject: DBObject)
 
 object SosMessage {
-
-  val MessagesCollectionName = "messages"
-  val CategoriesCollectionName = "categories"
-  val CommentsCollectionName = "comments"
-  val AnnouncementsCollectionName = "announcements"
+  import SosMessageCollections._
 
   val DefaultSosMessageAppName = "smdc"
 
   val random = new Random()
 
-  val system = ActorSystem("EmaiSenderSystem")
-  private val emailSender = system.actorOf(Props(new EmailSender), name = "emailSender")
+  private val emailSender = EmailSender.get
 
   // Categories
   def categoryExists(categoryId: String): Boolean = {
@@ -116,8 +118,7 @@ object SosMessage {
     DB.collection(resultCollectionName) {
       c =>
         c.find().sort(order).toSeq.map(message =>
-          Message(message.get("value").asInstanceOf[DBObject])
-        )
+          Message(message.get("value").asInstanceOf[DBObject]))
     }
   }
 
@@ -139,8 +140,7 @@ object SosMessage {
     DB.collection(resultCollectionName) {
       c =>
         c.find().sort(order).limit(limit.getOrElse(10)).toSeq.map(message =>
-          Message(message.get("value").asInstanceOf[DBObject])
-        )
+          Message(message.get("value").asInstanceOf[DBObject]))
     }
   }
 
@@ -162,8 +162,7 @@ object SosMessage {
     DB.collection(resultCollectionName) {
       c =>
         c.find().sort(order).limit(limit.getOrElse(10)).toSeq.map(message =>
-          Message(message.get("value").asInstanceOf[DBObject])
-        )
+          Message(message.get("value").asInstanceOf[DBObject]))
     }
   }
 

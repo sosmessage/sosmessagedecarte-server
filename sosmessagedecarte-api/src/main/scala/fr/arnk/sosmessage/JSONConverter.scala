@@ -57,7 +57,6 @@ object StandardConverters {
   implicit object AnnouncementAsJSON extends JSONConverter[Announcement] {
     def toJSON(o: Announcement) = {
       val dbObject = o.dbObject
-      println("Announcement: " + dbObject)
       ("id", dbObject.get("_id").toString) ~
         ("type", "announcement") ~
         ("title", dbObject.get("title").toString) ~

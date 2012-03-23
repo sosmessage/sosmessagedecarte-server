@@ -3,10 +3,25 @@ package fr.arnk.sosmessage
 import akka.actor._
 import com.mongodb.DBObject
 import javax.mail.internet.{ InternetAddress, MimeMessage }
-import javax.mail.{ Message, Session }
+import javax.mail.{ Message => JMessage, Session }
 import org.streum.configrity.Configuration
 
 case class SendEmail(message: DBObject)
+
+object EmailSender {
+
+  private val system = ActorSystem("EmaiSenderSystem")
+  private val emailSender = system.actorOf(Props(new EmailSender), name = "emailSender")
+
+  def get = {
+    emailSender
+  }
+
+  def stop = {
+    system.stop(emailSender)
+  }
+
+}
 
 class EmailSender extends Actor {
 
@@ -50,7 +65,7 @@ class EmailSender extends Actor {
       val mimeMessage = new MimeMessage(session)
 
       mimeMessage.setFrom(new InternetAddress(SosMessageConfig[String]("mail.from").get))
-      mimeMessage.setRecipients(Message.RecipientType.TO, SosMessageConfig[String]("mail.recipients").get)
+      mimeMessage.setRecipients(JMessage.RecipientType.TO, SosMessageConfig[String]("mail.recipients").get)
       mimeMessage.setSubject(Subject)
       val text = Text.format(message.get("category").toString, message.get("text").toString, message.get("contributorName").toString)
       mimeMessage.setText(text)
