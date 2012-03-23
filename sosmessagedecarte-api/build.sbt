@@ -23,3 +23,5 @@ libraryDependencies ++= Seq(
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 seq(scalariformSettings: _*)
+
+parallelExecution in Test := false
