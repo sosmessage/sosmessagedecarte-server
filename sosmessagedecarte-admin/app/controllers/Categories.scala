@@ -62,6 +62,7 @@ object Categories extends Controller {
         builder += "color" -> color
         builder += "createdAt" -> new Date()
         builder += "modifiedAt" -> new Date()
+        builder += "lastAddedMessageAt" -> new Date()
         categoriesCollection += builder.result
 
         Redirect(routes.Categories.index).flashing("actionDone" -> "categoryAdded")
