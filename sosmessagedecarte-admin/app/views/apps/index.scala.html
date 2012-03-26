@@ -26,6 +26,8 @@
           <tr>
             <th>Name</th>
             <th>Title</th>
+            <th></th>
+            <th></th>
             <th class="delete-message-col"></th>
           </tr>
         </thead>
@@ -33,10 +35,16 @@
           @apps.map { app =>
             <tr>
               <td>
-                <a href="@routes.SosMessageApps.categories(app.get("_id").toString)">@app.get("name")</a>
+                @app.get("name")
               </td>
               <td>
-                <a href="@routes.SosMessageApps.categories(app.get("_id").toString)">@app.get("title")</a>
+                @app.get("title")
+              </td>
+              <td>
+                <a class="btn small" href="@routes.SosMessageApps.announcements(app.get("_id").toString)">Manage announcements</a>
+              </td>
+              <td>
+                <a class="btn small" href="@routes.SosMessageApps.categories(app.get("_id").toString)">Manage categories</a>
               </td>
               <td class="actions-col">
                 <form action="@routes.SosMessageApps.delete(app.get("_id").toString)" method="POST"

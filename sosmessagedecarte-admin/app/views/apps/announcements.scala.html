@@ -1,0 +1,105 @@
+@(
+  app: com.mongodb.DBObject,
+  announcements: List[com.mongodb.DBObject],
+  nonAppAnnouncements: List[com.mongodb.DBObject],
+  addAnnouncementForm: play.api.data.Form[controllers.NewAnnouncement]
+)(implicit flash: play.api.mvc.Flash)
+
+@main(selectedTab = "apps", actionDone = flash.get("actionDone")) {
+
+  <section id="announcements">
+
+    <div class="announcements-container">
+      <div class="page-header">
+        <h1>Announcements of @app.get("title")</h1>
+      </div>
+
+      <p>
+        <a class="btn primary main-add-button"
+         data-controls-modal="new-announcement-modal"
+         data-backdrop="static"
+         data-keyboard="true">Add announcement</a>
+      </p>
+
+      <div style="clear:both;"></div>
+
+      <table class="zebra-striped">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Text</th>
+            <th>State</th>
+            <th class="delete-message-col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @announcements.map { announcement =>
+            <tr>
+              <td>
+                @announcement.get("title")
+              </td>
+              <td>
+                @announcement.get("text")
+              </td>
+              <td>
+                @if(announcement.get("apps").asInstanceOf[com.mongodb.DBObject].get(app.get("name").toString).asInstanceOf[com.mongodb.DBObject].get("published").asInstanceOf[Boolean]) {
+                  <span class="label success">published</span>
+                } else {
+                  <span class="label">unpublished</span>
+                }
+              </td>
+              <td class="actions-col">
+                <form action="@routes.SosMessageApps.removeAnnouncement(app.get("_id").toString, announcement.get("_id").toString)" method="POST"
+                  style="margin-bottom:0">
+                  <button class="btn small danger remove-announcement" type="submit">Remove</button>
+                </form>
+                @if(announcement.get("apps").asInstanceOf[com.mongodb.DBObject].get(app.get("name").toString).asInstanceOf[com.mongodb.DBObject].get("published").asInstanceOf[Boolean]) {
+                  <form action="@routes.SosMessageApps.unpublishAnnouncement(app.get("_id").toString, announcement.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <button class="btn small publish-button" type="submit">Unpublish</button>
+                  </form>
+                } else {
+                  <form action="@routes.SosMessageApps.publishAnnouncement(app.get("_id").toString, announcement.get("_id").toString)" method="POST"
+                    style="margin-bottom:0">
+                    <button class="btn small success publish-button" type="submit">Publish</button>
+                  </form>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div id="new-announcement-modal" class="modal hide">
+      <div class="modal-header">
+        <a href="#" class="close">x</a>
+        <h3>Add an Announcement</h3>
+      </div>
+      <div class="modal-body">
+        <form action="@routes.SosMessageApps.addAnnouncement(app.get("_id").toString)" method="POST" class="form-stacked" accept-charset="UTF-8">
+          <fieldset>
+            <div class="clearfix">
+              @addAnnouncementForm.forField("id") { field =>
+                <label for="@field.name">Announcement</label>
+                <div class="input">
+                  <select id="@field.name" name="@field.name" type="text" value="@field.value">
+                    @nonAppAnnouncements.map { nonAppAnnouncement =>
+                      <option value="@nonAppAnnouncement.get("_id").toString">@nonAppAnnouncement.get("title")</option>
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button class="btn small primary" type="submit">Add</button>
+            <button type="reset" class="btn small"  onclick="$('#new-announcement-modal').modal('hide'); return false;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </section>
+
+}

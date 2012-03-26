@@ -16,6 +16,18 @@ POST      /admin/apps/:appId/categories/:categoryId/moveup            controller
 POST      /admin/apps/:appId/categories/:categoryId/movedown          controllers.SosMessageApps.moveCategoryDown(appId: String, categoryId: String)
 POST      /admin/apps/:appId/categories/:categoryId/publish           controllers.SosMessageApps.publishCategory(appId: String, categoryId: String)
 POST      /admin/apps/:appId/categories/:categoryId/unpublish         controllers.SosMessageApps.unpublishCategory(appId: String, categoryId: String)
+GET       /admin/apps/:appId/announcements             controllers.SosMessageApps.announcements(appId: String)
+POST      /admin/apps/:appId/announcements             controllers.SosMessageApps.addAnnouncement(appId: String)
+POST      /admin/apps/:appId/announcements/:announcementId/remove            controllers.SosMessageApps.removeAnnouncement(appId: String, announcementId: String)
+POST      /admin/apps/:appId/announcements/:announcementId/publish           controllers.SosMessageApps.publishAnnouncement(appId: String, announcementId: String)
+POST      /admin/apps/:appId/announcements/:announcementId/unpublish         controllers.SosMessageApps.unpublishAnnouncement(appId: String, announcementId: String)
+
+# Announcements
+GET       /admin/announcements                               controllers.Announcements.index
+POST      /admin/announcements                               controllers.Announcements.save
+POST      /admin/announcements/:id/delete                    controllers.Announcements.delete(id: String)
+GET       /admin/announcements/:id                           controllers.Announcements.edit(id: String)
+POST      /admin/announcements/:id                           controllers.Announcements.update(id: String)
 
 # Categories
 GET       /admin/categories                               controllers.Categories.index

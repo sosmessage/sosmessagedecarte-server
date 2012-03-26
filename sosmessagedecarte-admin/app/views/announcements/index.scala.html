@@ -1,0 +1,105 @@
+@(
+  announcements: List[com.mongodb.DBObject],
+  newAnnouncementForm: play.api.data.Form[controllers.Announcement]
+)(implicit flash: play.api.mvc.Flash)
+
+@main(selectedTab = "announcements", actionDone = flash.get("actionDone")) {
+
+  <section id="categories">
+
+    <div class="categories-container">
+      <div class="page-header">
+        <h1>Announcements</h1>
+      </div>
+
+      <p>
+        <a class="btn primary main-add-button"
+         data-controls-modal="new-announcement-modal"
+         data-backdrop="static"
+         data-keyboard="true">Add announcement</a>
+      </p>
+
+      <div style="clear:both;"></div>
+
+      <table class="zebra-striped">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Text</th>
+            <th class="delete-message-col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @announcements.map { announcement =>
+            <tr>
+              <td>
+                @announcement.get("title")
+              </td>
+              <td>
+                @announcement.get("text")
+              </td>
+              <td class="actions-col">
+                <form action="@routes.Announcements.delete(announcement.get("_id").toString)" method="POST"
+                  style="margin-bottom:0">
+                  <button class="btn small danger delete-announcement" type="submit">Delete</button>
+                </form>
+                <a href="@routes.Announcements.edit(announcement.get("_id").toString)" class="btn small">Edit</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div id="new-announcement-modal" class="modal hide">
+      <div class="modal-header">
+        <a href="#" class="close">x</a>
+        <h3>New Announcement</h3>
+      </div>
+      <div class="modal-body">
+        <form action="@routes.Announcements.save" method="POST" class="form-stacked" accept-charset="UTF-8">
+          <fieldset>
+            <div class="clearfix">
+              @newAnnouncementForm.forField("title") { field =>
+                <label for="@field.name">Title</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newAnnouncementForm.forField("text") { field =>
+                <label for="@field.name">Text</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newAnnouncementForm.forField("url") { field =>
+                <label for="@field.name">URL</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newAnnouncementForm.forField("validateButton") { field =>
+                <label for="@field.name">Validate Button</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+              @newAnnouncementForm.forField("cancelButton") { field =>
+                <label for="@field.name">Cancel Button</label>
+                <div class="input">
+                  <input class="xlarge" id="@field.name" name="@field.name" type="text" value="@field.value" />
+                </div>
+              }
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button class="btn small primary" type="submit">Add</button>
+            <button type="reset" class="btn small"  onclick="$('#new-announcement-modal').modal('hide'); return false;">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </section>
+
+}

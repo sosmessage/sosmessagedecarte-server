@@ -29,6 +29,7 @@
           <h3><a href="@routes.Application.index">sosmessagedecarte</a></h3>
           <ul class="nav">
             <li @if(selectedTab == "apps") {class="active"}><a href="@routes.SosMessageApps.index">Apps</a></li>
+            <li @if(selectedTab == "announcements") {class="active"}><a href="@routes.Announcements.index">Announcements</a></li>
             <li @if(selectedTab == "categories") {class="active"}><a href="@routes.Categories.index">Categories</a></li>
             <li @if(selectedTab == "messages") {class="active"}><a href="@routes.Messages.index(None)">Messages</a></li>
             <li @if(selectedTab == "moderation") {class="active"}><a href="@routes.Moderation.index("waiting")">Moderation</a></li>
@@ -48,6 +49,10 @@
                  @if(message == "appAdded") { New App <strong>added</strong>! }
                  @if(message == "appUpdated") { App <strong>updated</strong>! }
                  @if(message == "appDeleted") { App <strong>deleted</strong>! }
+                 @if(message == "announcementAdded") { New announcement <strong>added</strong>! }
+                 @if(message == "announcementUpdated") { Announcement <strong>updated</strong>! }
+                 @if(message == "announcementDeleted") { Announcement <strong>deleted</strong>! }
+                 @if(message == "announcementRemoved") { Announcement <strong>removed</strong>! }
                  @if(message == "categoryAdded") { New category <strong>added</strong>! }
                  @if(message == "categoryUpdated") { Category <strong>updated</strong>! }
                  @if(message == "categoryDeleted") { Category <strong>deleted</strong>! }

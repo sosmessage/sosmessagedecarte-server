@@ -12,12 +12,14 @@ import java.util.Date
 
 case class SosMessageApp(name: String, title: String)
 
+case class NewAnnouncement(id: String)
 case class NewCategory(id: String)
 
 object SosMessageApps extends Controller {
 
   val config = SosMessageConfiguration.getConfig
 
+  val AnnouncementsCollectionName = "announcements"
   val CategoriesCollectionName = "categories"
   val MessagesCollectionName = "messages"
   val AppsCollectionName = "sosmessageapps"
@@ -26,6 +28,7 @@ object SosMessageApps extends Controller {
 
   val mongo = MongoConnection(config[String]("database.host", "127.0.0.1"), config[Int]("database.port", 27017))
 
+  val announcementsCollection = mongo(dataBaseName)(AnnouncementsCollectionName)
   val categoriesCollection = mongo(dataBaseName)(CategoriesCollectionName)
   val messagesCollection = mongo(dataBaseName)(MessagesCollectionName)
   val appsCollection = mongo(dataBaseName)(AppsCollectionName)
@@ -41,6 +44,12 @@ object SosMessageApps extends Controller {
     mapping(
       "id" -> nonEmptyText
     )(NewCategory.apply)(NewCategory.unapply)
+  )
+
+  val addAnnouncementForm = Form(
+    mapping(
+      "id" -> nonEmptyText
+    )(NewAnnouncement.apply)(NewAnnouncement.unapply)
   )
 
   def index = Action { implicit request =>
@@ -208,5 +217,77 @@ object SosMessageApps extends Controller {
       }
     }
     Redirect(routes.SosMessageApps.categories(appId)).flashing("actionDone" -> "categoryUpdated")
+  }
+
+  def announcements(appId: String) = Action { implicit request =>
+    val q = MongoDBObject("_id" -> new ObjectId(appId))
+    appsCollection.findOne(q).map { app =>
+      val appAnnouncementsQuery = MongoDBObject("apps." + app.get("name").toString -> MongoDBObject("$exists" -> true))
+      val announcementOrder = MongoDBObject("apps." + app.get("name").toString + ".order" -> -1)
+      val appAnnouncements = announcementsCollection.find(appAnnouncementsQuery).sort(announcementOrder).foldLeft(List[DBObject]())((l, a) =>
+        a :: l
+      ).reverse
+
+      val nonAppAnnouncementsQuery = MongoDBObject("apps." + app.get("name").toString -> MongoDBObject("$exists" -> false))
+      val nonAppAnnouncements = announcementsCollection.find(nonAppAnnouncementsQuery).foldLeft(List[DBObject]())((l, a) =>
+        a :: l
+      ).reverse
+
+      Ok(views.html.apps.announcements(app, appAnnouncements, nonAppAnnouncements, addAnnouncementForm))
+    }.getOrElse(NotFound)
+  }
+
+  def addAnnouncement(appId: String) = Action { implicit request =>
+    addAnnouncementForm.bindFromRequest().fold(
+      formWithErrors => {
+        Redirect(routes.SosMessageApps.announcements(appId))
+      },
+      newAnnouncement => {
+        appsCollection.findOne(MongoDBObject("_id" -> new ObjectId(appId))).map { app =>
+          val appAnnouncementsQuery = MongoDBObject("apps." + app.get("name").toString -> MongoDBObject("$exists" -> true))
+          val appAnnouncements = announcementsCollection.find(appAnnouncementsQuery)
+
+          val q = MongoDBObject("_id" -> new ObjectId(newAnnouncement.id))
+          val key = "apps." + app.get("name")
+          val o = $set(key -> MongoDBObject("published" -> false), "modifiedAt" -> new Date())
+          announcementsCollection.update(q, o, false, false)
+          Redirect(routes.SosMessageApps.announcements(appId)).flashing("actionDone" -> "announcementAdded")
+        }
+        Redirect(routes.SosMessageApps.announcements(appId))
+      }
+    )
+  }
+
+  def removeAnnouncement(appId: String, announcementId: String) = Action { implicit request =>
+    appsCollection.findOne(MongoDBObject("_id" -> new ObjectId(appId))).map { app =>
+      val q = MongoDBObject("_id" -> new ObjectId(announcementId))
+      val key = "apps." + app.get("name")
+      val o = $unset(key)
+      announcementsCollection.update(q, o, false, false)
+      Redirect(routes.SosMessageApps.announcements(appId)).flashing("actionDone" -> "announcementRemoved")
+    }
+    Redirect(routes.SosMessageApps.announcements(appId))
+  }
+
+  def publishAnnouncement(appId: String, announcementId: String) = Action { implicit request =>
+    val q = MongoDBObject("_id" -> new ObjectId(appId))
+    appsCollection.findOne(q).map { app =>
+      val key = "apps." + app.get("name") + ".published"
+      val o = $set(key -> true, "modifiedAt" -> new Date())
+      val q = MongoDBObject("_id" -> new ObjectId(announcementId))
+      announcementsCollection.update(q, o, false, false)
+    }
+    Redirect(routes.SosMessageApps.announcements(appId)).flashing("actionDone" -> "announcementUpdated")
+  }
+
+  def unpublishAnnouncement(appId: String, announcementId: String) = Action { implicit request =>
+    val q = MongoDBObject("_id" -> new ObjectId(appId))
+    appsCollection.findOne(q).map { app =>
+      val key = "apps." + app.get("name") + ".published"
+      val o = $set(key -> false, "modifiedAt" -> new Date())
+      val q = MongoDBObject("_id" -> new ObjectId(announcementId))
+      announcementsCollection.update(q, o, false, false)
+    }
+    Redirect(routes.SosMessageApps.announcements(appId)).flashing("actionDone" -> "announcementUpdated")
   }
 }

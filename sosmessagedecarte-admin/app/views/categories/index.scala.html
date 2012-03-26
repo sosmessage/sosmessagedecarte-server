@@ -27,7 +27,6 @@
           <tr>
             <th>Name</th>
             <th>Color</th>
-            <th>State</th>
             <th class="delete-message-col"></th>
           </tr>
         </thead>
@@ -40,13 +39,6 @@
               </td>
               <td>
                 <div class="color-div" style="background-color: #@category.get("color").toString.substring(3)"></div>
-              </td>
-              <td>
-                @if(category.get("published").asInstanceOf[Boolean]) {
-                  <span class="label success">published</span>
-                } else {
-                  <span class="label">unpublished</span>
-                }
               </td>
               <td class="actions-col">
                 <form action="@routes.Categories.delete(category.get("_id").toString)" method="POST"
