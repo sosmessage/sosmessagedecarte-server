@@ -1,4 +1,6 @@
-package fr.arnk.sosmessage
+package fr.arnk.sosmessage.v1
+
+import fr.arnk.sosmessage._
 
 import org.specs._
 import unfiltered._
@@ -12,21 +14,17 @@ object AnnouncementsSpec extends SosMessageSpec {
 
   import SosMessageCollections._
 
-  "The announcements API v2" should {
+  "The announcements API v1" should {
     doBefore {
       TestDB.initialize
     }
 
     "retrieve only published announcements for given app" in {
-      val resp = http(host / "api" / "v2" / "announcements" <<? Map("appname" -> "smdt") as_str)
+      val resp = http(host / "api" / "v1" / "announcements" <<? Map("appname" -> "smdt") as_str)
       val json = parse(resp)
+      json \ "count" must_== JInt(1)
 
-      json \ "meta" \ "code" must_== JInt(200)
-
-      val response = json \ "response"
-      response \ "count" must_== JInt(1)
-
-      val JArray(items) = response \ "items"
+      val JArray(items) = json \ "items"
       items.size must_== 1
 
       val firstItem = items(0)

@@ -1,4 +1,6 @@
-package fr.arnk.sosmessage
+package fr.arnk.sosmessage.v1
+
+import fr.arnk.sosmessage._
 
 import org.specs._
 import unfiltered._
@@ -12,7 +14,7 @@ object CommentsSpec extends SosMessageSpec {
 
   import SosMessageCollections._
 
-  "The comments API v2" should {
+  "The comments API v1" should {
     doBefore {
       TestDB.initialize
     }
@@ -21,22 +23,20 @@ object CommentsSpec extends SosMessageSpec {
       DB.collection(MessagesCollectionName) {
         c =>
           val aMessage = c.findOne(MongoDBObject("text" -> "First message in first category")).get
-          http(host / "api" / "v2" / "messages" / aMessage.get("_id").toString / "comments"
+          http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
             << Map("text" -> "Bender's comment", "author" -> "Bender", "uid" -> "android1") >|)
-          http(host / "api" / "v2" / "messages" / aMessage.get("_id").toString / "comments"
+          http(host / "api" / "v1" / "messages" / aMessage.get("_id").toString / "comments"
             << Map("text" -> "Leela's comment", "author" -> "Leela", "uid" -> "iphone1") >|)
 
           val updatedMessage = c.findOne(MongoDBObject("text" -> "First message in first category")).get
           updatedMessage.asInstanceOf[BasicDBObject].getLong("commentsCount") must_== 2
 
-          val resp = http(host / "api" / "v2" / "messages" / updatedMessage.get("_id").toString / "comments" as_str)
+          val resp = http(host / "api" / "v1" / "messages" / updatedMessage.get("_id").toString / "comments" as_str)
           val json = parse(resp)
 
-          json \ "meta" \ "code" must_== JInt(200)
-          val response = json \ "response"
-          response \ "count" must_== JInt(2)
+          json \ "count" must_== JInt(2)
 
-          val JArray(items) = response \ "items"
+          val JArray(items) = json \ "items"
           items.size must_== 2
 
           val firstItem = items(0)

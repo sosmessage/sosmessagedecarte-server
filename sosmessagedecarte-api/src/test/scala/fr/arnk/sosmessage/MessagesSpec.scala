@@ -13,7 +13,7 @@ object MessagesSpec extends SosMessageSpec {
 
   import SosMessageCollections._
 
-  "The messages API" should {
+  "The messages API v2" should {
     doBefore {
       TestDB.initialize
       // stop the Actor sending email
@@ -25,12 +25,14 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("name" -> "firstCategory")).get
       }
-      val resp = http(host / "api" / "v1" / "categories" / firstCategory.get("_id").toString / "messages" as_str)
+      val resp = http(host / "api" / "v2" / "categories" / firstCategory.get("_id").toString / "messages" as_str)
       val json = parse(resp)
 
-      json \ "count" must_== JInt(2)
+      json \ "meta" \ "code" must_== JInt(200)
+      val response = json \ "response"
+      response \ "count" must_== JInt(2)
 
-      val JArray(items) = json \ "items"
+      val JArray(items) = response \ "items"
       items.size must_== 2
 
       val firstItem = items(0)
@@ -45,12 +47,14 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("name" -> "secondCategory")).get
       }
-      val resp = http(host / "api" / "v1" / "categories" / secondCategory.get("_id").toString / "messages" as_str)
+      val resp = http(host / "api" / "v2" / "categories" / secondCategory.get("_id").toString / "messages" as_str)
       val json = parse(resp)
 
-      json \ "count" must_== JInt(2)
+      json \ "meta" \ "code" must_== JInt(200)
+      val response = json \ "response"
+      response \ "count" must_== JInt(2)
 
-      val JArray(items) = json \ "items"
+      val JArray(items) = response \ "items"
       items.size must_== 2
 
       val firstItem = items(0)
@@ -68,9 +72,11 @@ object MessagesSpec extends SosMessageSpec {
       val expectedFirstCategoryMessages = List(JString("First message in first category"), JString("Third message in first category"))
       (1 until 50).map {
         index =>
-          val resp = http(host / "api" / "v1" / "categories" / firstCategory.get("_id").toString / "message" as_str)
+          val resp = http(host / "api" / "v2" / "categories" / firstCategory.get("_id").toString / "message" as_str)
           val json = parse(resp)
-          expectedFirstCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
+          json \ "meta" \ "code" must_== JInt(200)
+          val response = json \ "response"
+          expectedFirstCategoryMessages mustContain (response \ "text").asInstanceOf[JString]
       }
 
       val secondCategory = DB.collection(CategoriesCollectionName) {
@@ -80,9 +86,11 @@ object MessagesSpec extends SosMessageSpec {
       val expectedSecondCategoryMessages = List(JString("First message in second category"), JString("Second message in second category"))
       (1 until 50).map {
         index =>
-          val resp = http(host / "api" / "v1" / "categories" / secondCategory.get("_id").toString / "message" as_str)
+          val resp = http(host / "api" / "v2" / "categories" / secondCategory.get("_id").toString / "message" as_str)
           val json = parse(resp)
-          expectedSecondCategoryMessages mustContain (json \ "text").asInstanceOf[JString]
+          json \ "meta" \ "code" must_== JInt(200)
+          val response = json \ "response"
+          expectedSecondCategoryMessages mustContain (response \ "text").asInstanceOf[JString]
       }
     }
 
@@ -91,8 +99,10 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("name" -> "fourthCategory")).get
       }
-      http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "test message") >|)
+      val resp = http(host / "api" / "v2" / "categories" / fourthCategory.get("_id").toString / "message"
+        << Map("text" -> "test message") as_str)
+      val json = parse(resp)
+      json \ "meta" \ "code" must_== JInt(200)
 
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
@@ -116,8 +126,10 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("name" -> "fourthCategory")).get
       }
-      http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message"
-        << Map("text" -> "bender message", "contributorName" -> "Bender") >|)
+      val resp = http(host / "api" / "v2" / "categories" / fourthCategory.get("_id").toString / "message"
+        << Map("text" -> "bender message", "contributorName" -> "Bender") as_str)
+      val json = parse(resp)
+      json \ "meta" \ "code" must_== JInt(200)
 
       val messageOrder = MongoDBObject("createdAt" -> -1)
       val q = MongoDBObject("categoryId" -> fourthCategory.get("_id"))
@@ -141,19 +153,29 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           val q = MongoDBObject("text" -> "Second message in second category")
           var message = c.findOne(q).get
-          http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "4") >|)
+
+          var resp = http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "4") as_str)
+          var json = parse(resp)
+          json \ "meta" \ "code" must_== JInt(200)
+
           message = c.findOne(q).get
           var ratings = message.get("ratings").asInstanceOf[BasicDBObject]
           ratings.containsField("iphone1") mustBe true
           ratings.getLong("iphone1") must_== 4
 
-          http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "2") >|)
+          resp = http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "2") as_str)
+          json = parse(resp)
+          json \ "meta" \ "code" must_== JInt(200)
+
           message = c.findOne(q).get
           ratings = message.get("ratings").asInstanceOf[BasicDBObject]
           ratings.containsField("iphone1") mustBe true
           ratings.getLong("iphone1") must_== 2
 
-          http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "3") >|)
+          resp = http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "3") as_str)
+          json = parse(resp)
+          json \ "meta" \ "code" must_== JInt(200)
+
           message = c.findOne(q).get
           ratings = message.get("ratings").asInstanceOf[BasicDBObject]
           ratings.containsField("iphone1") mustBe true
@@ -168,25 +190,26 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("text" -> "First message in third category")).get
       }
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "3") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone2", "rating" -> "4") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone3", "rating" -> "1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone4", "rating" -> "3") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "2") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android2", "rating" -> "4") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android3", "rating" -> "3") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android4", "rating" -> "4") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone1", "rating" -> "3") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone2", "rating" -> "4") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone3", "rating" -> "1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "iphone4", "rating" -> "3") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android1", "rating" -> "2") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android2", "rating" -> "4") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android3", "rating" -> "3") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "rate" << Map("uid" -> "android4", "rating" -> "4") >|)
 
       val thirdCategory = DB.collection(CategoriesCollectionName) {
         c =>
           c.findOne(MongoDBObject("name" -> "thirdCategory")).get
       }
-      val resp = http(host / "api" / "v1" / "categories" / thirdCategory.get("_id").toString / "message" as_str)
+      val resp = http(host / "api" / "v2" / "categories" / thirdCategory.get("_id").toString / "message" as_str)
       val json = parse(resp)
+      val response = json \ "response"
 
-      json \ "text" must_== JString("First message in third category")
-      json \ "rating" \ "value" must_== JDouble(3.0)
-      json \ "rating" \ "count" must_== JInt(8)
+      response \ "text" must_== JString("First message in third category")
+      response \ "rating" \ "value" must_== JDouble(3.0)
+      response \ "rating" \ "count" must_== JInt(8)
     }
 
     "retrieve votes with message" in {
@@ -194,42 +217,48 @@ object MessagesSpec extends SosMessageSpec {
         c =>
           c.findOne(MongoDBObject("text" -> "First message in fourth category")).get
       }
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone1", "vote" -> "1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone2", "vote" -> "-1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone3", "vote" -> "-1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone4", "vote" -> "-1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android1", "vote" -> "-1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android2", "vote" -> "1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android3", "vote" -> "-1") >|)
-      http(host / "api" / "v1" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android4", "vote" -> "1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone1", "vote" -> "1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone2", "vote" -> "-1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone3", "vote" -> "-1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "iphone4", "vote" -> "-1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android1", "vote" -> "-1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android2", "vote" -> "1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android3", "vote" -> "-1") >|)
+      http(host / "api" / "v2" / "messages" / message.get("_id").toString / "vote" << Map("uid" -> "android4", "vote" -> "1") >|)
 
       val fourthCategory = DB.collection(CategoriesCollectionName) {
         c =>
           c.findOne(MongoDBObject("name" -> "fourthCategory")).get
       }
-      var resp = http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message" as_str)
+      var resp = http(host / "api" / "v2" / "categories" / fourthCategory.get("_id").toString / "message" as_str)
       var json = parse(resp)
+      json \ "meta" \ "code" must_== JInt(200)
+      var response = json \ "response"
 
-      json \ "text" must_== JString("First message in fourth category")
-      json \ "vote" \ "plus" must_== JInt(3)
-      json \ "vote" \ "minus" must_== JInt(5)
-      json \ "vote" \ "userVote" must_== JInt(0)
+      response \ "text" must_== JString("First message in fourth category")
+      response \ "vote" \ "plus" must_== JInt(3)
+      response \ "vote" \ "minus" must_== JInt(5)
+      response \ "vote" \ "userVote" must_== JInt(0)
 
-      resp = http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message" <<? Map("uid" -> "iphone1") as_str)
+      resp = http(host / "api" / "v2" / "categories" / fourthCategory.get("_id").toString / "message" <<? Map("uid" -> "iphone1") as_str)
       json = parse(resp)
+      json \ "meta" \ "code" must_== JInt(200)
+      response = json \ "response"
 
-      json \ "text" must_== JString("First message in fourth category")
-      json \ "vote" \ "plus" must_== JInt(3)
-      json \ "vote" \ "minus" must_== JInt(5)
-      json \ "vote" \ "userVote" must_== JInt(1)
+      response \ "text" must_== JString("First message in fourth category")
+      response \ "vote" \ "plus" must_== JInt(3)
+      response \ "vote" \ "minus" must_== JInt(5)
+      response \ "vote" \ "userVote" must_== JInt(1)
 
-      resp = http(host / "api" / "v1" / "categories" / fourthCategory.get("_id").toString / "message" <<? Map("uid" -> "android1") as_str)
+      resp = http(host / "api" / "v2" / "categories" / fourthCategory.get("_id").toString / "message" <<? Map("uid" -> "android1") as_str)
       json = parse(resp)
+      json \ "meta" \ "code" must_== JInt(200)
+      response = json \ "response"
 
-      json \ "text" must_== JString("First message in fourth category")
-      json \ "vote" \ "plus" must_== JInt(3)
-      json \ "vote" \ "minus" must_== JInt(5)
-      json \ "vote" \ "userVote" must_== JInt(-1)
+      response \ "text" must_== JString("First message in fourth category")
+      response \ "vote" \ "plus" must_== JInt(3)
+      response \ "vote" \ "minus" must_== JInt(5)
+      response \ "vote" \ "userVote" must_== JInt(-1)
     }
   }
 

@@ -1,4 +1,6 @@
-package fr.arnk.sosmessage
+package fr.arnk.sosmessage.v1
+
+import fr.arnk.sosmessage._
 
 import org.specs._
 import unfiltered._
@@ -12,20 +14,18 @@ object CategoriesSpec extends SosMessageSpec {
 
   import SosMessageCollections._
 
-  "The categories API v2" should {
+  "The categories API v1" should {
     doBefore {
       TestDB.initialize
     }
 
     "retrieve ordered published categories" in {
-      val resp = http(host / "api" / "v2" / "categories" as_str)
+      val resp = http(host / "api" / "v1" / "categories" as_str)
       val json = parse(resp)
 
-      json \ "meta" \ "code" must_== JInt(200)
-      val response = json \ "response"
-      response \ "count" must_== JInt(3)
+      json \ "count" must_== JInt(3)
 
-      val JArray(items) = response \ "items"
+      val JArray(items) = json \ "items"
       items.size must_== 3
 
       val firstItem = items(0)
@@ -42,14 +42,12 @@ object CategoriesSpec extends SosMessageSpec {
     }
 
     "retrieve ordered published categories for the smdt appname" in {
-      val resp = http(host / "api" / "v2" / "categories" <<? Map("appname" -> "smdt") as_str)
+      val resp = http(host / "api" / "v1" / "categories" <<? Map("appname" -> "smdt") as_str)
       val json = parse(resp)
 
-      json \ "meta" \ "code" must_== JInt(200)
-      val response = json \ "response"
-      response \ "count" must_== JInt(2)
+      json \ "count" must_== JInt(2)
 
-      val JArray(items) = response \ "items"
+      val JArray(items) = json \ "items"
       items.size must_== 2
 
       val firstItem = items(0)

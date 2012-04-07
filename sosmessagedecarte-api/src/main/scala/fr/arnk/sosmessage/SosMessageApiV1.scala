@@ -6,7 +6,7 @@ import unfiltered.request._
 import unfiltered.response.{ NoContent, BadRequest, Json, Ok }
 import StandardConverters._
 
-object SosMessageApi {
+object SosMessageApiV1 {
 
   // Categories
   def publishedCategories: Cycle.Intent[Any, Any] = {

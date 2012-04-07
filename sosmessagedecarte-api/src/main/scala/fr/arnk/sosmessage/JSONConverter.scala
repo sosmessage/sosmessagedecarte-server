@@ -67,4 +67,10 @@ object StandardConverters {
           ("cancel", dbObject.get("buttons").asInstanceOf[DBObject].get("cancel").toString))
     }
   }
+
+  def toJSON[T](o: T)(implicit converter: JSONConverter[T]) =
+    converter.toJSON(o)
+
+  def toJSON[T](xs: Seq[T])(implicit converter: JSONConverter[T]) =
+    xs.map(o => converter.toJSON(o))
 }
